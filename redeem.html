@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ECO-HAT | Redeem Supplies</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        :root { --maroon: #8B0000; --gold: #DAA520; --bg: #f8f9fa; }
+        body { background: var(--bg); font-family: 'Segoe UI', sans-serif; margin: 0; }
+        
+        header { 
+            background: var(--maroon); 
+            color: white; 
+            padding: 12px 40px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+        }
+        .header-logo { display: flex; align-items: center; gap: 10px; }
+        .header-logo h1 { margin: 0; font-size: 1.1rem; letter-spacing: 1px; }
+
+        .back-btn { 
+            background: rgba(255,255,255,0.1); 
+            border: 1px solid rgba(255,255,255,0.4); 
+            color: white; 
+            padding: 8px 18px; 
+            border-radius: 6px; 
+            cursor: pointer;
+            font-size: 0.8rem;
+            width: auto !important; /* Prevent stretching */
+            white-space: nowrap;
+        }
+
+        .container { padding: 30px; max-width: 900px; margin: auto; }
+
+        .points-strip { 
+            background: white; 
+            padding: 20px 30px; 
+            border-radius: 15px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05); 
+            margin-bottom: 30px; 
+            border-left: 6px solid var(--gold);
+        }
+        .points-value { margin: 0; font-size: 2.2rem; color: var(--maroon); }
+
+        .supply-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+        .supply-card { 
+            background: white; 
+            padding: 25px; 
+            border-radius: 15px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05); 
+            text-align: center; 
+            border: 1px solid #eee; 
+            transition: 0.3s;
+        }
+        .supply-card:hover { transform: translateY(-5px); }
+        .redeem-btn { 
+            background: var(--maroon); 
+            color: white; 
+            border: none; 
+            padding: 12px; 
+            border-radius: 8px; 
+            width: 100%; 
+            font-weight: bold; 
+            cursor: pointer; 
+        }
+        .redeem-btn:disabled { background: #ddd; cursor: not-allowed; }
+
+        #qr-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; justify-content: center; align-items: center; }
+        .modal-content { background: white; padding: 30px; border-radius: 20px; text-align: center; width: 300px; }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-logo">
+            <span style="font-size:1.5rem;">🛍️</span>
+            <h1>REDEEM SUPPLIES</h1>
+        </div>
+        <button onclick="location.href='dashboard.html'" class="back-btn">Back to Dashboard</button>
+    </header>
+
+    <div class="container">
+        <div class="points-strip">
+            <div>
+                <small style="color:#888; font-weight:bold; text-transform:uppercase;">AVAILABLE ECO-PUNTOS</small>
+                <h1 class="points-value" id="user-points">0</h1>
+            </div>
+            <span style="font-size:1.5rem;">🪙</span>
+        </div>
+
+        <div class="supply-grid" id="supply-list"></div>
+    </div>
+
+    <div id="qr-modal">
+        <div class="modal-content">
+            <h3 style="color:var(--maroon);">Redemption QR</h3>
+            <div id="qrcode" style="margin:20px auto; display:flex; justify-content:center;"></div>
+            <p id="txn-display" style="font-family:monospace; font-weight:bold;"></p>
+            <button onclick="document.getElementById('qr-modal').style.display='none'" class="redeem-btn" style="background:#444;">Close</button>
+        </div>
+    </div>
+
+    <script type="module">
+        import Storage from './js/services/Storage.js';
+        const u = Storage.getCurrentUser();
+        document.getElementById('user-points').textContent = u.points;
+
+        const supplies = [
+            { name: "Notebook", price: 50, icon: "📓" },
+            { name: "Ballpen", price: 20, icon: "🖊️" },
+            { name: "Pencil", price: 15, icon: "✏️" },
+            { name: "Scissors", price: 60, icon: "✂️" },
+            { name: "Crayons", price: 80, icon: "🖍️" },
+            { name: "Ruler", price: 25, icon: "📏" }
+        ];
+
+        const list = document.getElementById('supply-list');
+        supplies.forEach(s => {
+            const canAfford = u.points >= s.price;
+            list.innerHTML += `
+                <div class="supply-card">
+                    <span style="font-size:3rem;">${s.icon}</span>
+                    <h4>${s.name}</h4>
+                    <p style="color:var(--maroon); font-weight:bold;">${s.price} Puntos</p>
+                    <button class="redeem-btn" ${canAfford ? '' : 'disabled'} onclick="showQR('${s.name}')">Redeem Item</button>
+                </div>`;
+        });
+
+        window.showQR = (name) => {
+            const id = Math.floor(1000 + Math.random() * 9000);
+            document.getElementById('qr-modal').style.display = 'flex';
+            document.getElementById('txn-display').textContent = `TXN-ID: ${id}`;
+            document.getElementById('qrcode').innerHTML = "";
+            new QRCode(document.getElementById("qrcode"), { text: `TXN:${id}`, width: 160, height: 160, colorDark: "#8B0000" });
+        };
+    </script>
+</body>
+</html>

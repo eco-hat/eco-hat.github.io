@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ECO-HAT | Student Dashboard</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        :root { 
+            --maroon: #8B0000; 
+            --gold: #DAA520;
+            --bg: #f8f9fa; 
+        }
+        body { background: var(--bg); font-family: 'Segoe UI', sans-serif; margin: 0; }
+        
+        /* Fixed Header Layout */
+        header { 
+            background: var(--maroon); 
+            color: white; 
+            padding: 12px 40px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .user-info h2 { margin: 0; font-size: 1.1rem; }
+        .user-info small { opacity: 0.7; font-size: 0.7rem; text-transform: uppercase; }
+
+        .logout-btn { 
+            background: rgba(255,255,255,0.1); 
+            border: 1px solid rgba(255,255,255,0.4); 
+            color: white; 
+            padding: 8px 18px; 
+            border-radius: 6px; 
+            cursor: pointer;
+            font-size: 0.8rem;
+            width: auto !important; /* Forces correct size */
+            white-space: nowrap;
+        }
+        .logout-btn:hover { background: rgba(255,255,255,0.2); }
+
+        .dashboard-container { padding: 40px; max-width: 900px; margin: auto; }
+        
+        .points-card { 
+            background: white; 
+            padding: 40px; 
+            border-radius: 20px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05); 
+            display: flex; 
+            justify-content: space-around; 
+            align-items: center;
+            border-left: 8px solid var(--gold); /* Gold accent */
+        }
+        .points-display h1 { font-size: 4rem; color: var(--maroon); margin: 0; }
+        
+        .redeem-btn { 
+            background: var(--maroon); 
+            color: white; 
+            border: none; 
+            padding: 15px 40px; 
+            border-radius: 10px; 
+            font-weight: bold; 
+            cursor: pointer; 
+            font-size: 1rem;
+            transition: 0.3s;
+        }
+        .redeem-btn:hover { background: #600000; transform: translateY(-2px); }
+
+        .history-card { background: white; margin-top: 30px; border-radius: 15px; padding: 25px; box-shadow: 0 5px 15px rgba(0,0,0,0.03); }
+        .history-item { 
+            display: flex; 
+            justify-content: space-between; 
+            padding: 15px; 
+            border-radius: 10px; 
+            margin-bottom: 10px;
+            border-left: 5px solid #ccc;
+            background: #fff;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="user-info">
+            <small>Eco-Puntos Portal</small>
+            <h2 id="user-name">Loading...</h2>
+        </div>
+        <button onclick="location.href='index.html'" class="logout-btn">Logout Account</button>
+    </header>
+
+    <div class="dashboard-container">
+        <div class="points-card">
+            <div class="points-display">
+                <small style="color:#888; font-weight:bold; text-transform:uppercase;">My Current Balance</small>
+                <h1 id="user-points">0</h1>
+            </div>
+            <button onclick="location.href='redeem.html'" class="redeem-btn">Redeem School Supplies</button>
+        </div>
+
+        <div class="history-card">
+            <h3 style="color: var(--maroon); margin-top: 0;">♻️ Recent Activity History</h3>
+            <div id="history-list"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        import Storage from './js/services/Storage.js';
+        const u = Storage.getCurrentUser();
+        if(!u) window.location.href = "index.html";
+
+        document.getElementById('user-name').textContent = u.name;
+        document.getElementById('user-points').textContent = u.points;
+
+        const list = document.getElementById('history-list');
+        u.activities.slice().reverse().forEach(a => {
+            const isPos = a.points > 0;
+            list.innerHTML += `
+                <div class="history-item" style="border-left-color: ${isPos ? '#2ecc71' : '#e74c3c'}">
+                    <div>
+                        <b>${a.description}</b><br>
+                        <small style="color:#aaa">${a.location}</small>
+                    </div>
+                    <div style="font-weight:bold; color:${isPos ? '#27ae60' : '#c0392b'}">
+                        ${isPos ? '+' : ''}${a.points}
+                    </div>
+                </div>`;
+        });
+    </script>
+</body>
+</html>

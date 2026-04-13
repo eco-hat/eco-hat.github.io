@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ECO-HAT | Admin Portal</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        :root { --primary-red: #8B0000; --gold: #DAA520; --bg: #f4f7f6; --card-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+        body { background: var(--bg); margin: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
+        
+        header { background: var(--primary-red); color: white; padding: 15px 40px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .logout-btn { background: rgba(255,255,255,0.15); border: 1px solid white; border-radius: 5px; color: white; padding: 8px 20px; cursor: pointer; font-size: 0.85rem; }
+
+        .admin-container { padding: 30px; max-width: 1200px; margin: auto; display: flex; flex-direction: column; gap: 25px; }
+
+        /* GRID STYLES */
+        .analytics-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+        .middle-row { display: grid; grid-template-columns: 1fr 1.5fr; gap: 25px; }
+        .bottom-row { display: grid; grid-template-columns: 1.2fr 1fr; gap: 25px; }
+
+        .stat-card { background: white; padding: 25px; border-radius: 15px; box-shadow: var(--card-shadow); border-top: 5px solid var(--primary-red); }
+        .stat-card h1 { margin: 10px 0 0; font-size: 2.5rem; color: var(--primary-red); }
+        
+        .card { background: white; padding: 25px; border-radius: 15px; box-shadow: var(--card-shadow); min-height: 350px; display: flex; flex-direction: column; }
+        
+        /* SCANNER & LOGS */
+        .scanner-box { background: #1a1a1a; color: white; padding: 30px; border-radius: 20px; display: flex; align-items: center; justify-content: space-around; }
+        .cam-preview { width: 120px; height: 80px; background: #000; border: 1px solid #333; border-radius: 10px; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+        .scan-line { width: 100%; height: 2px; background: #0f0; position: absolute; animation: scanAnim 2.5s infinite linear; }
+        @keyframes scanAnim { from {top:0} to {top:100%} }
+
+        .log-box { background: white; padding: 25px; border-radius: 20px; border: 2px dashed #ddd; text-align: center; }
+
+        /* --- MOBILE RESPONSIVENESS --- */
+        @media (max-width: 850px) {
+            header { flex-direction: column; padding: 15px; gap: 10px; text-align: center; }
+            .admin-container { padding: 15px; }
+            .analytics-row, .middle-row, .bottom-row { grid-template-columns: 1fr; gap: 15px; }
+            .scanner-box { flex-direction: column; gap: 20px; text-align: center; }
+            .card { min-height: auto; }
+            table { display: block; overflow-x: auto; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div style="display:flex; align-items:center; gap:12px;">
+            <span>♻️</span>
+            <h1 style="margin:0; font-size: 1.2rem;">ECO-HAT ADMIN</h1>
+        </div>
+        <button onclick="location.href='index.html'" class="logout-btn">Logout</button>
+    </header>
+
+    <div class="admin-container">
+        <div class="analytics-row">
+            <div class="stat-card"><small>Bottles Collected Today</small><h1 id="total-day">0</h1></div>
+            <div class="stat-card"><small>Weekly Performance</small><h1 id="total-week">0</h1></div>
+            <div class="stat-card"><small>Total Monthly Intake</small><h1 id="total-month">0</h1></div>
+        </div>
+
+        <div class="middle-row">
+            <div class="card">
+                <div style="display:flex; justify-content:space-between; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 15px;">
+                    <h3 style="margin:0;">📦 Inventory Stock</h3>
+                    <span style="font-size: 0.7rem; color: var(--gold); cursor:pointer;" onclick="toggleEdit()">Edit Stock</span>
+                </div>
+                <div id="inventory-list"></div>
+            </div>
+
+            <div class="card">
+                <h3>🏆 Sustainability Leaderboard</h3>
+                <div style="overflow-x: auto;">
+                    <table style="width:100%; border-collapse: collapse; font-size: 0.9rem;">
+                        <thead><tr style="text-align:left; color:#aaa; font-size:0.7rem;"><th>STUDENT</th><th>ID</th><th style="text-align:right;">BOTTLES</th></tr></thead>
+                        <tbody id="db-list"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="bottom-row">
+            <div class="scanner-box">
+                <div><h2 style="margin:0; color:var(--gold);">📷 LIVE SCANNER</h2><p style="font-size:0.7rem; opacity:0.5;">Verifying Redemption</p></div>
+                <div class="cam-preview"><div class="scan-line"></div><span style="font-size:0.5rem;">ACTIVE</span></div>
+                <div style="display:flex; gap:10px;">
+                    <input id="scan-id" placeholder="TXN-ID" style="width:80px; padding:8px; border-radius:5px; border:none;">
+                    <button onclick="alert('Verified!')" style="background:var(--gold); border:none; padding:8px 15px; border-radius:5px; font-weight:bold;">Verify</button>
+                </div>
+            </div>
+
+            <div class="log-box">
+                <h3 style="margin:0 0 10px;">💰 Sales Transparency Log</h3>
+                <input id="sale-amt" type="number" placeholder="₱ Amt" style="padding:8px; width:100px;">
+                <button onclick="saveLog()" style="background:var(--primary-red); color:white; border:none; padding:8px 15px; border-radius:5px;">Save</button>
+                <div id="history-log" style="text-align:left; font-size:0.7rem; margin-top:10px; max-height:80px; overflow-y:auto;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import Storage from './js/services/Storage.js';
+        const users = Storage.getAllUsers();
+        let d=0, w=0, m=0;
+        const now = new Date();
+
+        // Inventory Logic
+        let inventory = [{name:"Notebooks", stock:3}, {name:"Pencils", stock:42}, {name:"Scissors", stock:12}];
+        window.renderInventory = () => {
+            const list = document.getElementById('inventory-list');
+            list.innerHTML = inventory.map(i => `<div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #f9f9f9;"><span>${i.name}</span><span style="font-weight:bold; color:${i.stock<=5?'red':'green'}">${i.stock} left</span></div>`).join('');
+        };
+
+        // Stats Logic
+        users.forEach(u => {
+            if (u.studentNumber.toUpperCase() === "ADMIN") return;
+            let uBottles = 0;
+            u.activities.forEach(a => {
+                const count = a.points/10; uBottles += count;
+                const diff = (now - new Date(a.location))/(1000*60*60*24);
+                if(diff<=1) d+=count; if(diff<=7) w+=count; if(diff<=30) m+=count;
+            });
+            document.getElementById('db-list').innerHTML += `<tr><td style="padding:10px 0;"><b>${u.name}</b></td><td>${u.studentNumber}</td><td style="text-align:right;">${Math.floor(uBottles)}</td></tr>`;
+        });
+
+        document.getElementById('total-day').textContent = Math.floor(d);
+        document.getElementById('total-week').textContent = Math.floor(w);
+        document.getElementById('total-month').textContent = Math.floor(m);
+
+        window.saveLog = () => {
+            const amt = document.getElementById('sale-amt').value;
+            if(!amt) return;
+            const log = document.getElementById('history-log');
+            log.innerHTML = `<div>₱${amt} recorded at ${new Date().toLocaleTimeString()}</div>` + log.innerHTML;
+            document.getElementById('sale-amt').value = "";
+        };
+
+        renderInventory();
+    </script>
+</body>
+</html>

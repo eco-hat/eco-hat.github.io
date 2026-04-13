@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ECO-HAT | Login</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        :root { 
+            --primary-red: #8B0000; 
+            --bg-gray: #f5f5f5; 
+            --card-shadow: 0 4px 15px rgba(0,0,0,0.08); 
+        }
+
+        body { 
+            font-family: 'Segoe UI', sans-serif; 
+            margin: 0; 
+            background: var(--bg-gray); 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            min-height: 100vh; 
+        }
+
+        .card { 
+            background: white; 
+            padding: 25px; 
+            border-radius: 20px; 
+            box-shadow: var(--card-shadow); 
+            width: 90%; 
+            max-width: 380px; 
+            box-sizing: border-box;
+        }
+
+        input { 
+            width: 100%; 
+            padding: 12px; 
+            margin: 8px 0; 
+            border-radius: 10px; 
+            border: 1px solid #ddd; 
+            box-sizing: border-box;
+            font-size: 16px; /* Prevents auto-zoom on mobile */
+        }
+
+        button { 
+            width: 100%; 
+            padding: 12px; 
+            border: none; 
+            border-radius: 10px; 
+            cursor: pointer; 
+            font-weight: bold; 
+        }
+
+        .divider { display: flex; align-items: center; margin: 20px 0; color: #ccc; font-size: 0.8rem; }
+        .divider hr { flex: 1; border: 0; border-top: 1px solid #eee; }
+
+        @media (max-width: 480px) {
+            .card { padding: 20px; }
+            h2 { font-size: 1.4rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2 style="text-align: center; color: var(--primary-red); margin-bottom: 5px;">♻ ECO-HAT</h2>
+        <p style="text-align: center; color: #666; font-size: 0.9rem; margin-top: 0;">Sustainability Portal</p>
+        
+        <div style="margin-top: 20px;">
+            <div style="background: #fff8f8; padding: 15px; border-radius: 15px; border: 1px solid #fee;">
+                <small style="color: var(--primary-red); font-weight: bold;">New Student Registration</small>
+                <input id="reg-name" type="text" placeholder="Full Name">
+                <input id="reg-id" type="text" placeholder="Student ID Number">
+                <input id="reg-pass" type="password" placeholder="Create Password">
+                <button id="reg-btn" style="background: var(--primary-red); color: white; margin-top: 10px;">Register Student</button>
+            </div>
+            
+            <div class="divider"><hr><span style="padding:0 10px;">OR</span><hr></div>
+            
+            <small style="color: #666; font-weight: bold;">Account Login</small>
+            <input id="login-id" type="text" placeholder="Student ID / Admin ID">
+            <input id="login-pass" type="password" placeholder="Password">
+            <button id="login-btn" style="background: #444; margin-top: 10px; color: white;">Login to Dashboard</button>
+        </div>
+    </div>
+
+    <script type="module">
+        import User from './js/models/User.js';
+        import Storage from './js/services/Storage.js';
+
+        // --- REGISTRATION LOGIC ---
+        document.getElementById('reg-btn').addEventListener('click', async () => {
+            const name = document.getElementById("reg-name").value.trim();
+            const id = document.getElementById("reg-id").value.trim();
+            const pass = document.getElementById("reg-pass").value.trim();
+            if(!name || !id || !pass) return alert("Fill all fields");
+
+            const btn = document.getElementById('reg-btn');
+            try {
+                btn.textContent = "Registering...";
+                btn.disabled = true;
+
+                const newUser = new User(name, id, pass);
+                await Storage.register(newUser); // Waits for Railway API
+                
+                alert("Registered! You can now login.");
+                document.querySelectorAll('input').forEach(i => i.value = "");
+            } catch (e) { 
+                alert(e.message); 
+            } finally {
+                btn.textContent = "Register Student";
+                btn.disabled = false;
+            }
+        });
+
+        // --- LOGIN LOGIC ---
+        document.getElementById('login-btn').addEventListener('click', async () => {
+            const idInput = document.getElementById("login-id").value.trim();
+            const passInput = document.getElementById("login-pass").value.trim();
+
+            if (idInput.toUpperCase() === "ADMIN" && passInput === "ECOHAT2026") {
+                window.location.href = "admin.html";
+                return; 
+            }
+
+            const btn = document.getElementById('login-btn');
+            try {
+                btn.textContent = "Logging in...";
+                btn.disabled = true;
+
+                await Storage.login(idInput, passInput); // Waits for Railway API
+                window.location.href = "dashboard.html"; 
+            } catch (e) { 
+                alert(e.message); 
+            } finally {
+                btn.textContent = "Login to Dashboard";
+                btn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>

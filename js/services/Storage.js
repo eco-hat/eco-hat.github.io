@@ -28,8 +28,9 @@ export default class Storage {
         }
         
         const userData = await response.json();
-        // Save the session data locally so the dashboard knows who is logged in
         localStorage.setItem('currentUser', JSON.stringify(userData)); 
+        
+        return userData; // <-- ADD THIS LINE
     }
 
     static getCurrentUser() {

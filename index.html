@@ -94,10 +94,16 @@
             const pass = document.getElementById("reg-pass").value.trim();
             if(!name || !id || !pass) return alert("Fill all fields");
 
-            // NEW: The Strict ID Format Check
+            // The Strict Name Format Check
+            const namePattern = /^[a-zA-Z\s.]+$/;
+            if (!namePattern.test(name)) {
+                return alert("Invalid Name! Only letters, spaces, and dots (.) are allowed.");
+            }
+
+            // The Strict ID Format Check
             const idPattern = /^\d{4}-\d{5}-BN-\d$/;
             if (!idPattern.test(id)) {
-                return alert("Invalid ID format! Please use the format: XXXX-XXXXX-BN-X (e.g., 2022-00211-BN-0)");
+                return alert("Invalid ID format! Please use the format: XXXX-XXXXX-BN-X");
             }
 
             const btn = document.getElementById('reg-btn');

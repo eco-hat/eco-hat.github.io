@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ECO-HAT | Login</title>
+    <title>ECO-HAT | Sustainability Portal</title>
     <link rel="stylesheet" href="js/css/styles.css">
     <style>
         :root { 
@@ -94,13 +94,19 @@
             const pass = document.getElementById("reg-pass").value.trim();
             if(!name || !id || !pass) return alert("Fill all fields");
 
+            // NEW: The Strict ID Format Check
+            const idPattern = /^\d{4}-\d{5}-BN-\d$/;
+            if (!idPattern.test(id)) {
+                return alert("Invalid ID format! Please use the format: XXXX-XXXXX-BN-X (e.g., 2022-00211-BN-0)");
+            }
+
             const btn = document.getElementById('reg-btn');
             try {
                 btn.textContent = "Registering...";
                 btn.disabled = true;
 
                 const newUser = new User(name, id, pass);
-                await Storage.register(newUser); // Waits for Railway API
+                await Storage.register(newUser); 
                 
                 alert("Registered! You can now login.");
                 document.querySelectorAll('input').forEach(i => i.value = "");
@@ -117,18 +123,21 @@
             const idInput = document.getElementById("login-id").value.trim();
             const passInput = document.getElementById("login-pass").value.trim();
 
-            if (idInput.toUpperCase() === "ADMIN" && passInput === "ECOHAT2026") {
-                window.location.href = "admin.html";
-                return; 
-            }
-
             const btn = document.getElementById('login-btn');
             try {
                 btn.textContent = "Logging in...";
                 btn.disabled = true;
 
-                await Storage.login(idInput, passInput); // Waits for Railway API
-                window.location.href = "dashboard.html"; 
+                // Wait for the API and get the user profile back
+                const userData = await Storage.login(idInput, passInput); 
+                
+                // Route them based on their database role!
+                if (userData.role === "admin") {
+                    window.location.href = "admin.html";
+                } else {
+                    window.location.href = "dashboard.html"; 
+                }
+
             } catch (e) { 
                 alert(e.message); 
             } finally {

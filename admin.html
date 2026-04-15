@@ -104,6 +104,25 @@
         let d=0, w=0, m=0;
         const now = new Date();
 
+        async function syncLogs() {
+            try {
+                const data = await Storage.getAdminLogs();
+                const logBox = document.getElementById('history-log');
+                logBox.innerHTML = ""; // Clear old text
+                
+                data.logs.forEach(logText => {
+                    // Check if it's a cash log or a redemption log to color it properly
+                    const color = logText.includes("₱") ? "var(--primary-red)" : "green";
+                    logBox.innerHTML += `<div style="color:${color}; padding: 4px 0;">${logText}</div>`;
+                });
+            } catch (e) {
+                console.error("Log sync failed", e);
+            }
+        }
+        
+        // Call it immediately when the page loads!
+        syncLogs();
+
         // --- START WEBCAM SCANNER ---
         let isProcessing = false; // Prevents scanning the same code 50 times a second
 
@@ -122,6 +141,7 @@
                     Storage.processRedemption(decodedText)
                         .then(msg => {
                             alert("✅ " + msg);
+                            syncLogs();
                             // Log it in the admin UI
                             const log = document.getElementById('history-log');
                             log.innerHTML = `<div style="color:green;">${data.student_id} redeemed ${data.item_name}</div>` + log.innerHTML;
@@ -136,6 +156,20 @@
                 isProcessing = false; // Not our QR code, keep scanning
             }
         }
+
+        window.saveLog = async () => {
+            const amtInput = document.getElementById('sale-amt');
+            const amt = amtInput.value;
+            if(!amt) return;
+            
+            try {
+                await Storage.saveManualLog(amt);
+                amtInput.value = ""; // clear the box
+                syncLogs(); // Re-download the logs instantly!
+            } catch (e) {
+                alert("Failed to save: " + e.message);
+            }
+        };
 
         // Initialize the camera
         const html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: {width: 250, height: 250} }, false);

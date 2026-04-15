@@ -64,4 +64,21 @@ export default class Storage {
         if (!response.ok) throw new Error(result.detail || "Redemption failed");
         return result.message;
     }
+
+    // Fetch live logs from the database
+    static async getAdminLogs() {
+        const response = await fetch(`${this.API_URL}/admin/logs`);
+        if (!response.ok) throw new Error("Failed to fetch logs");
+        return await response.json();
+    }
+
+    // Save a manual cash amount to the database
+    static async saveManualLog(amount) {
+        const response = await fetch(`${this.API_URL}/admin/manual-log`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ amount: parseFloat(amount) })
+        });
+        if (!response.ok) throw new Error("Failed to save log");
+    }
 }

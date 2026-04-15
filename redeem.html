@@ -107,8 +107,10 @@
 
     <script type="module">
         import Storage from './js/services/Storage.js';
-        const u = Storage.getCurrentUser();
-        document.getElementById('user-points').textContent = u.points;
+        
+        // Ensure user is logged in
+        const localUser = Storage.getCurrentUser();
+        if(!localUser) window.location.href = "index.html";
 
         const supplies = [
             { name: "Notebook", price: 50, icon: "📓" },
@@ -119,26 +121,44 @@
             { name: "Ruler", price: 25, icon: "📏" }
         ];
 
-        const list = document.getElementById('supply-list');
-        supplies.forEach(s => {
-            const canAfford = u.points >= s.price;
-            list.innerHTML += `
-                <div class="supply-card">
-                    <span style="font-size:3rem;">${s.icon}</span>
-                    <h4>${s.name}</h4>
-                    <p style="color:var(--maroon); font-weight:bold;">${s.price} Puntos</p>
-                    <button class="redeem-btn" ${canAfford ? '' : 'disabled'} onclick="showQR('${s.name}', ${s.price})">Redeem Item</button>
-                </div>`;
-        });
+        // Fetch fresh data from API before rendering the page
+        async function loadRedeemPage() {
+            try {
+                // Fetch fresh points from the database
+                const dbData = await Storage.getUserHistory(localUser.studentNumber);
+                const currentPoints = dbData.points;
+                
+                // Update the UI with real points
+                document.getElementById('user-points').textContent = currentPoints;
 
+                const list = document.getElementById('supply-list');
+                list.innerHTML = ""; 
+
+                // Render buttons based on LIVE points
+                supplies.forEach(s => {
+                    const canAfford = currentPoints >= s.price;
+                    list.innerHTML += `
+                        <div class="supply-card">
+                            <span style="font-size:3rem;">${s.icon}</span>
+                            <h4>${s.name}</h4>
+                            <p style="color:var(--maroon); font-weight:bold;">${s.price} Puntos</p>
+                            <button class="redeem-btn" ${canAfford ? '' : 'disabled'} onclick="showQR('${s.name}', ${s.price})">Redeem Item</button>
+                        </div>`;
+                });
+            } catch (error) {
+                console.error("Failed to load points:", error);
+                alert("Failed to load your latest points. Please refresh the page.");
+            }
+        }
+
+        // Generate the QR Code
         window.showQR = (name, price) => {
             const txnId = Math.floor(1000 + Math.random() * 9000);
             document.getElementById('qr-modal').style.display = 'flex';
             document.getElementById('txn-display').textContent = `TXN-ID: ${txnId} | Item: ${name}`;
             
-            // We pack the data into a JSON string for the scanner to read
             const qrData = JSON.stringify({
-                student_id: u.studentNumber,
+                student_id: localUser.studentNumber,
                 item_name: name,
                 price: price,
                 txn: txnId
@@ -147,11 +167,14 @@
             document.getElementById('qrcode').innerHTML = "";
             new QRCode(document.getElementById("qrcode"), { 
                 text: qrData, 
-                width: 180, 
-                height: 180, 
-                colorDark: "#8B0000" 
+                width: 220,          // Increased size for easier focusing
+                height: 220, 
+                colorDark: "#000000" // Pure black for maximum contrast
             });
         };
+
+        // Run the fetch function when page loads
+        loadRedeemPage();
     </script>
 </body>
 </html>

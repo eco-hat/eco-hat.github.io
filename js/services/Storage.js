@@ -37,6 +37,12 @@ export default class Storage {
         return JSON.parse(localStorage.getItem('currentUser'));
     }
 
+    static async getUserHistory(studentId) {
+        const response = await fetch(`${this.API_URL}/user-history/${studentId}`);
+        if (!response.ok) throw new Error("Failed to fetch history");
+        return await response.json();
+    }
+
     static logout() { 
         localStorage.removeItem('currentUser'); 
     }

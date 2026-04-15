@@ -51,4 +51,17 @@ export default class Storage {
     // before we build the backend routes for them!
     static getAllUsers() { return []; }
     static updateCurrentUser(user) { }
+
+    // Admin tool: Process a scanned QR code
+    static async processRedemption(qrData) {
+        const response = await fetch(`${this.API_URL}/process-redemption`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: qrData // qrData is already a JSON string from the scanner
+        });
+
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.detail || "Redemption failed");
+        return result.message;
+    }
 }

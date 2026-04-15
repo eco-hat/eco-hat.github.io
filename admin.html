@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ECO-HAT | Admin Portal</title>
     <link rel="stylesheet" href="css/styles.css">
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     <style>
         :root { --primary-red: #8B0000; --gold: #DAA520; --bg: #f4f7f6; --card-shadow: 0 4px 20px rgba(0,0,0,0.08); }
         body { background: var(--bg); margin: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
@@ -80,13 +81,12 @@
         </div>
 
         <div class="bottom-row">
-            <div class="scanner-box">
-                <div><h2 style="margin:0; color:var(--gold);">📷 LIVE SCANNER</h2><p style="font-size:0.7rem; opacity:0.5;">Verifying Redemption</p></div>
-                <div class="cam-preview"><div class="scan-line"></div><span style="font-size:0.5rem;">ACTIVE</span></div>
-                <div style="display:flex; gap:10px;">
-                    <input id="scan-id" placeholder="TXN-ID" style="width:80px; padding:8px; border-radius:5px; border:none;">
-                    <button onclick="alert('Verified!')" style="background:var(--gold); border:none; padding:8px 15px; border-radius:5px; font-weight:bold;">Verify</button>
+            <div class="scanner-box" style="display:flex; flex-direction:column; gap:10px;">
+                <div style="text-align:center; width: 100%;">
+                    <h2 style="margin:0; color:var(--gold);">📷 LIVE SCANNER</h2>
+                    <p style="font-size:0.7rem; opacity:0.5; margin-bottom: 15px;">Awaiting QR Code...</p>
                 </div>
+                <div id="reader" style="width: 100%; max-width: 400px; background: black; border-radius: 10px; overflow: hidden;"></div>
             </div>
 
             <div class="log-box">
@@ -104,38 +104,42 @@
         let d=0, w=0, m=0;
         const now = new Date();
 
-        // Inventory Logic
-        let inventory = [{name:"Notebooks", stock:3}, {name:"Pencils", stock:42}, {name:"Scissors", stock:12}];
-        window.renderInventory = () => {
-            const list = document.getElementById('inventory-list');
-            list.innerHTML = inventory.map(i => `<div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #f9f9f9;"><span>${i.name}</span><span style="font-weight:bold; color:${i.stock<=5?'red':'green'}">${i.stock} left</span></div>`).join('');
-        };
+        // --- START WEBCAM SCANNER ---
+        let isProcessing = false; // Prevents scanning the same code 50 times a second
 
-        // Stats Logic
-        users.forEach(u => {
-            if (u.studentNumber.toUpperCase() === "ADMIN") return;
-            let uBottles = 0;
-            u.activities.forEach(a => {
-                const count = a.points/10; uBottles += count;
-                const diff = (now - new Date(a.location))/(1000*60*60*24);
-                if(diff<=1) d+=count; if(diff<=7) w+=count; if(diff<=30) m+=count;
-            });
-            document.getElementById('db-list').innerHTML += `<tr><td style="padding:10px 0;"><b>${u.name}</b></td><td>${u.studentNumber}</td><td style="text-align:right;">${Math.floor(uBottles)}</td></tr>`;
-        });
+        function onScanSuccess(decodedText, decodedResult) {
+            if (isProcessing) return; // Ignore if we are already processing a scan
+            isProcessing = true;
 
-        document.getElementById('total-day').textContent = Math.floor(d);
-        document.getElementById('total-week').textContent = Math.floor(w);
-        document.getElementById('total-month').textContent = Math.floor(m);
+            try {
+                // Check if the QR code is actually our ECO-HAT JSON format
+                const data = JSON.parse(decodedText);
+                if (!data.student_id || !data.item_name) throw new Error("Invalid QR Format");
 
-        window.saveLog = () => {
-            const amt = document.getElementById('sale-amt').value;
-            if(!amt) return;
-            const log = document.getElementById('history-log');
-            log.innerHTML = `<div>₱${amt} recorded at ${new Date().toLocaleTimeString()}</div>` + log.innerHTML;
-            document.getElementById('sale-amt').value = "";
-        };
+                const confirmRedeem = confirm(`Scanned!\nStudent: ${data.student_id}\nItem: ${data.item_name}\nCost: ${data.price} Puntos\n\nApprove this transaction?`);
+                
+                if (confirmRedeem) {
+                    Storage.processRedemption(decodedText)
+                        .then(msg => {
+                            alert("✅ " + msg);
+                            // Log it in the admin UI
+                            const log = document.getElementById('history-log');
+                            log.innerHTML = `<div style="color:green;">${data.student_id} redeemed ${data.item_name}</div>` + log.innerHTML;
+                        })
+                        .catch(err => alert("❌ Error: " + err.message))
+                        .finally(() => setTimeout(() => { isProcessing = false; }, 2000)); // Wait 2 seconds before allowing next scan
+                } else {
+                    isProcessing = false;
+                }
+            } catch (e) {
+                console.log("Ignored non-EcoHat QR Code");
+                isProcessing = false; // Not our QR code, keep scanning
+            }
+        }
 
-        renderInventory();
+        // Initialize the camera
+        const html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: {width: 250, height: 250} }, false);
+        html5QrcodeScanner.render(onScanSuccess);
     </script>
 </body>
 </html>

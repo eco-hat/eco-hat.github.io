@@ -104,26 +104,57 @@
 
     <script type="module">
         import Storage from './js/services/Storage.js';
-        const u = Storage.getCurrentUser();
-        if(!u) window.location.href = "index.html";
+        
+        // 1. Check who is logged in
+        const localUser = Storage.getCurrentUser();
+        if(!localUser || localUser.role === 'admin') window.location.href = "index.html";
 
-        document.getElementById('user-name').textContent = u.name;
-        document.getElementById('user-points').textContent = u.points;
+        document.getElementById('user-name').textContent = localUser.name;
 
-        const list = document.getElementById('history-list');
-        u.activities.slice().reverse().forEach(a => {
-            const isPos = a.points > 0;
-            list.innerHTML += `
-                <div class="history-item" style="border-left-color: ${isPos ? '#2ecc71' : '#e74c3c'}">
-                    <div>
-                        <b>${a.description}</b><br>
-                        <small style="color:#aaa">${a.location}</small>
-                    </div>
-                    <div style="font-weight:bold; color:${isPos ? '#27ae60' : '#c0392b'}">
-                        ${isPos ? '+' : ''}${a.points}
-                    </div>
-                </div>`;
-        });
+        // 2. Fetch fresh database data
+        async function loadDashboard() {
+            try {
+                // Call our new backend route
+                const dbData = await Storage.getUserHistory(localUser.studentNumber);
+                
+                // Update Points Display
+                document.getElementById('user-points').textContent = dbData.points;
+
+                // Update History List
+                const list = document.getElementById('history-list');
+                list.innerHTML = ""; // Clear it out
+
+                if (dbData.activities.length === 0) {
+                    list.innerHTML = "<p style='text-align:center; color:#888;'>No recent activity. Start recycling!</p>";
+                    return;
+                }
+
+                // Render each item
+                dbData.activities.forEach(a => {
+                    const isPos = a.points > 0;
+                    
+                    // Format the timestamp nicely
+                    const dateObj = new Date(a.date);
+                    const dateString = dateObj.toLocaleDateString() + " " + dateObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+
+                    list.innerHTML += `
+                        <div class="history-item" style="border-left-color: ${isPos ? '#2ecc71' : '#e74c3c'}">
+                            <div>
+                                <b>${a.description}</b><br>
+                                <small style="color:#aaa">${a.location} • ${dateString}</small>
+                            </div>
+                            <div style="font-weight:bold; color:${isPos ? '#27ae60' : '#c0392b'}">
+                                ${isPos ? '+' : ''}${a.points}
+                            </div>
+                        </div>`;
+                });
+            } catch (error) {
+                console.error("Error loading history:", error);
+                document.getElementById('history-list').innerHTML = "<p style='color:red;'>Failed to load history.</p>";
+            }
+        }
+
+        loadDashboard();
     </script>
 </body>
 </html>

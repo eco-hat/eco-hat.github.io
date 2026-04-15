@@ -127,16 +127,30 @@
                     <span style="font-size:3rem;">${s.icon}</span>
                     <h4>${s.name}</h4>
                     <p style="color:var(--maroon); font-weight:bold;">${s.price} Puntos</p>
-                    <button class="redeem-btn" ${canAfford ? '' : 'disabled'} onclick="showQR('${s.name}')">Redeem Item</button>
+                    <button class="redeem-btn" ${canAfford ? '' : 'disabled'} onclick="showQR('${s.name}', ${s.price})">Redeem Item</button>
                 </div>`;
         });
 
-        window.showQR = (name) => {
-            const id = Math.floor(1000 + Math.random() * 9000);
+        window.showQR = (name, price) => {
+            const txnId = Math.floor(1000 + Math.random() * 9000);
             document.getElementById('qr-modal').style.display = 'flex';
-            document.getElementById('txn-display').textContent = `TXN-ID: ${id}`;
+            document.getElementById('txn-display').textContent = `TXN-ID: ${txnId} | Item: ${name}`;
+            
+            // We pack the data into a JSON string for the scanner to read
+            const qrData = JSON.stringify({
+                student_id: u.studentNumber,
+                item_name: name,
+                price: price,
+                txn: txnId
+            });
+
             document.getElementById('qrcode').innerHTML = "";
-            new QRCode(document.getElementById("qrcode"), { text: `TXN:${id}`, width: 160, height: 160, colorDark: "#8B0000" });
+            new QRCode(document.getElementById("qrcode"), { 
+                text: qrData, 
+                width: 180, 
+                height: 180, 
+                colorDark: "#8B0000" 
+            });
         };
     </script>
 </body>

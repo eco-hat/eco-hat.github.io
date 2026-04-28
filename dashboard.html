@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ECO-HAT | Student Dashboard</title>
-    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="js/css/styles.css">
     <style>
         :root { 
             --maroon: #8B0000; 
@@ -88,19 +88,20 @@
     </header>
 
     <div class="dashboard-container">
-        <div class="points-card">
-            <div class="points-display">
-                <small style="color:#888; font-weight:bold; text-transform:uppercase;">My Current Balance</small>
-                <h1 id="user-points">0</h1>
-            </div>
-            <button onclick="location.href='redeem.html'" class="redeem-btn">Redeem School Supplies</button>
+    <div class="points-card">
+        <div class="points-display">
+            <span class="label">My Current Balance</span>
+            <h1 id="user-points">979</h1>
         </div>
-
-        <div class="history-card">
-            <h3 style="color: var(--maroon); margin-top: 0;">♻️ Recent Activity History</h3>
-            <div id="history-list"></div>
-        </div>
+        <button class="redeem-btn" onclick="location.href='redeem.html'">Redeem School Supplies</button>
     </div>
+
+    <div class="history-card">
+        <h3 style="color: var(--maroon); margin-top:0;">♻ Recent Activity History</h3>
+        <div id="history-list">
+            </div>
+    </div>
+</div>
 
     <script type="module">
         import Storage from './js/services/Storage.js';

@@ -1,122 +1,127 @@
+/* --- Global Reset & Variables --- */
 :root {
-    --primary-red: #8B0000;
+    --maroon: #8B0000;
     --gold: #DAA520;
-    --bg-gray: #f5f5f5;
-    --card-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    --bg: #f8f9fa;
+    --white: #ffffff;
 }
 
-body { font-family: 'Segoe UI', sans-serif; margin: 0; background: var(--bg-gray); color: #333; }
-.center { display: flex; justify-content: center; align-items: center; height: 100vh; }
-.card { background: white; padding: 25px; border-radius: 20px; box-shadow: var(--card-shadow); width: 350px; }
+* { box-sizing: border-box; }
 
+body { 
+    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+    margin: 0; 
+    background-color: var(--bg); 
+    color: #333; 
+}
+
+/* --- Header --- */
 header { 
-    background: var(--primary-red); color: white; padding: 20px 40px; 
-    display: flex; justify-content: space-between; align-items: center; 
+    background: var(--maroon); 
+    color: white; 
+    padding: 15px 40px; 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
 }
 
-.container { padding: 20px 40px; }
-
-/* Admin Stats Grid */
-.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
-.stat-card { 
-    background: white; padding: 20px; border-radius: 15px; text-align: center; 
-    box-shadow: var(--card-shadow); border-top: 5px solid var(--primary-red); 
-}
-.stat-card h1 { font-size: 2.5rem; margin: 10px 0; color: var(--primary-red); }
-
-/* Tables */
-table { width: 100%; border-collapse: collapse; background: white; border-radius: 15px; overflow: hidden; box-shadow: var(--card-shadow); margin-top: 20px; }
-th, td { padding: 15px; text-align: left; border-bottom: 1px solid #eee; }
-th { background: #f8f8f8; color: #666; }
-
-/* Existing Dashboard Styles */
-.points-card {
-    background: white; border-radius: 15px; padding: 20px;
-    display: flex; justify-content: space-between; align-items: center;
-    box-shadow: var(--card-shadow); margin-bottom: 30px;
-}
-.activity-item {
-    background: white; margin-bottom: 10px; padding: 15px 25px;
-    border-radius: 12px; display: flex; justify-content: space-between;
-    align-items: center; box-shadow: var(--card-shadow);
-}
-.rewards-grid {
-    display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-    gap: 20px; margin-top: 20px;
-}
-.reward-card { background: white; border-radius: 15px; padding: 20px; box-shadow: var(--card-shadow); border: 1px solid #eee; }
-.reward-icon { font-size: 2rem; background: #FFF8E1; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; border-radius: 10px; margin-bottom: 10px; }
-
-input { width: calc(100% - 24px); padding: 12px; margin: 8px 0; border-radius: 10px; border: 1px solid #ddd; }
-button { width: 100%; padding: 12px; background: var(--primary-red); color: white; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; }
-.btn-redeem { padding: 10px 40px; width: auto; }
-.logout-btn { background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); width: auto; padding: 8px 15px; }
-
-.modal-overlay {
-    display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0,0,0,0.7); z-index: 1000; justify-content: center; align-items: center;
+.logout-btn {
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.4);
+    color: white;
+    padding: 8px 18px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: 0.3s;
 }
 
-/* --- MOBILE RESPONSIVENESS --- */
+.logout-btn:hover { background: rgba(255,255,255,0.2); }
 
-@media (max-width: 768px) {
-    /* 1. Stack the Header elements */
-    header {
-        flex-direction: column;
-        padding: 15px 20px;
-        text-align: center;
-        gap: 15px;
-    }
+/* --- Dashboard Layout --- */
+.dashboard-container { 
+    padding: 30px 20px; 
+    max-width: 900px; 
+    margin: auto; 
+}
 
-    .logout-btn {
-        width: 100%; /* Make logout easier to tap on mobile */
-    }
+/* --- Points Card (Stacked on Mobile, Side-by-Side on Desktop) --- */
+.points-card { 
+    background: var(--white); 
+    padding: 40px 20px; 
+    border-radius: 20px; 
+    box-shadow: 0 10px 30px rgba(0,0,0,0.05); 
+    display: flex; 
+    flex-direction: column; 
+    align-items: center;
+    text-align: center;
+    gap: 25px;
+    border-top: 8px solid var(--gold); /* Gold accent from login page */
+    margin-bottom: 30px;
+}
 
-    /* 2. Adjust Containers for smaller padding */
-    .container {
-        padding: 15px;
-    }
+.label { 
+    color: #888; 
+    font-weight: bold; 
+    text-transform: uppercase; 
+    font-size: 0.8rem;
+    letter-spacing: 1px;
+}
 
-    /* 3. Force Stats Cards to stack 1-by-1 */
-    .stats-grid {
-        grid-template-columns: 1fr; 
-        gap: 15px;
-    }
+.points-display h1 { 
+    font-size: 4.5rem; 
+    color: var(--maroon); 
+    margin: 10px 0; 
+    line-height: 1;
+}
 
-    /* 4. Fix Tables (Make them scrollable so they don't break the layout) */
-    table {
-        display: block;
-        overflow-x: auto;
-        white-space: nowrap;
-    }
+.redeem-btn { 
+    background: var(--maroon); 
+    color: white; 
+    border: none; 
+    padding: 16px 32px; 
+    border-radius: 12px; 
+    font-weight: bold; 
+    cursor: pointer; 
+    width: 100%;
+    max-width: 300px;
+    font-size: 1rem;
+    transition: transform 0.2s, background 0.2s;
+}
 
-    /* 5. Adjust Dashboard items (Points and Activity) */
-    .points-card {
-        flex-direction: column;
-        text-align: center;
-        gap: 15px;
-    }
+.redeem-btn:hover { background: #600000; }
+.redeem-btn:active { transform: scale(0.96); }
 
-    .activity-item {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 10px;
-    }
+/* --- Activity History --- */
+.history-card { 
+    background: var(--white); 
+    border-radius: 15px; 
+    padding: 25px; 
+    box-shadow: 0 5px 15px rgba(0,0,0,0.03); 
+}
 
-    .activity-item span:last-child {
-        align-self: flex-end;
-        font-weight: bold;
-        color: var(--primary-red);
-    }
+.history-item { 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center;
+    padding: 15px; 
+    border-radius: 12px; 
+    margin-bottom: 12px;
+    background: #fff;
+    border: 1px solid #eee;
+    border-left: 6px solid #ccc; /* Default color */
+}
 
-    /* 6. Rewards Grid Adjustment */
-    .rewards-grid {
-        grid-template-columns: 1fr;
+/* --- Desktop Logic --- */
+@media (min-width: 768px) {
+    .points-card { 
+        flex-direction: row; 
+        justify-content: space-around; 
+        text-align: left;
+        padding: 50px;
+        border-top: none;
+        border-left: 8px solid var(--gold);
     }
-
-    /* 7. Modal Adjustment */
-    .card {
-        width: 90%; /* Ensure login/modals don't go off-screen */
-        padding: 20px;
-    }
+    .redeem-btn { width: auto; }
 }

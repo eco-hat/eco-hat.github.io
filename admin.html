@@ -97,23 +97,55 @@
 
         </div> 
 
-        <div class="bottom-row">
-            <div class="scanner-box" style="display:flex; flex-direction:column; gap:10px;">
-                <div style="text-align:center; width: 100%;">
-                    <h2 style="margin:0; color:var(--gold);">📷 LIVE SCANNER</h2>
-                    <p style="font-size:0.7rem; opacity:0.5; margin-bottom: 15px;">Awaiting QR Code...</p>
+        <!-- --- FULL WIDTH SECTIONS --- -->
+
+        <!-- 1. Full Sales Transparency System (Now at the Top) -->
+        <div class="card" style="margin-top: 25px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap: wrap; gap: 10px;">
+                <h3 style="margin:0;">💰 Full Sales Transparency System</h3>
+                <div id="log-summary" style="background:var(--bg); padding:10px 20px; border-radius:10px; border:1px solid #eee;">
+                    <small style="color:#666;">Total Verified Sales:</small>
+                    <strong id="total-sales-amt" style="color:var(--primary-red); font-size:1.2rem; margin-left:10px;">₱0.00</strong>
                 </div>
-                <div id="reader" style="width: 100%; max-width: 400px; background: black; border-radius: 10px; overflow: hidden;"></div>
             </div>
 
-            <div class="log-box">
-                <h3 style="margin:0 0 10px;">💰 Sales Transparency Log</h3>
-                <input id="sale-amt" type="number" placeholder="₱ Amt" style="padding:8px; width:100px;">
-                <button onclick="saveLog()" style="background:var(--primary-red); color:white; border:none; padding:8px 15px; border-radius:5px;">Save</button>
-                <div id="history-log" style="text-align:left; font-size:0.7rem; margin-top:10px; max-height:80px; overflow-y:auto;"></div>
+            <!-- Transaction Form -->
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap:15px; background:#f9f9f9; padding:20px; border-radius:12px; margin-bottom:20px;">
+                <div style="display:flex; flex-direction:column; gap:5px;">
+                    <label style="font-size:0.8rem; font-weight:bold;">Amount (₱)</label>
+                    <input id="new-log-amt" type="number" placeholder="0.00" style="padding:10px; border:1px solid #ddd; border-radius:5px;">
+                </div>
+                <div style="display:flex; flex-direction:column; gap:5px;">
+                    <label style="font-size:0.8rem; font-weight:bold;">Description</label>
+                    <input id="new-log-desc" type="text" placeholder="e.g. Bottles Sold" style="padding:10px; border:1px solid #ddd; border-radius:5px;">
+                </div>
+                <div style="display:flex; flex-direction:column; gap:5px;">
+                    <label style="font-size:0.8rem; font-weight:bold;">Receipt Proof</label>
+                    <input type="file" id="receipt-upload" accept="image/*" style="font-size:0.8rem;">
+                    <img id="receipt-preview" style="display:none; width:50px; height:50px; object-fit:cover; border-radius:5px; margin-top:5px; border:1px solid var(--gold);">
+                </div>
+                <button onclick="submitNewLog()" style="background:var(--primary-red); color:white; border:none; padding:10px; border-radius:8px; cursor:pointer; align-self:flex-end; font-weight:bold; height: 45px;">
+                    ➕ Log Transaction
+                </button>
+            </div>
+
+            <!-- Logs List -->
+            <div id="transparency-list" style="display:flex; flex-direction:column; gap:10px; max-height:300px; overflow-y:auto; padding-right: 5px;">
+                <!-- Entries injected by renderTransparencyLogs() -->
             </div>
         </div>
-    </div>
+
+        <!-- 2. Live Scanner (Now at the Bottom) -->
+        <div class="scanner-box" style="margin-top: 25px; display:flex; flex-direction:column; align-items:center;">
+            <div style="text-align:center; width: 100%;">
+                <h2 style="margin:0; color:var(--gold);">📷 LIVE SCANNER</h2>
+                <p style="font-size:0.7rem; opacity:0.5; margin-bottom: 15px;">Awaiting QR Code...</p>
+            </div>
+            <div id="reader" style="width: 100%; max-width: 500px; background: black; border-radius: 15px; overflow: hidden; border: 2px solid #333;"></div>
+        </div>
+
+    </div> 
+
 
     <script type="module">
     import Storage from './js/services/Storage.js';
@@ -266,6 +298,93 @@
             isProcessing = false;
         }
     }
+
+    // --- TRANSPARENCY SYSTEM LOGIC ---
+
+// 1. Handle Receipt Preview
+document.getElementById('receipt-upload').addEventListener('change', function(e) {
+    const reader = new FileReader();
+    const preview = document.getElementById('receipt-preview');
+    reader.onload = () => {
+        preview.src = reader.result;
+        preview.style.display = 'block';
+    };
+    if(e.target.files[0]) reader.readAsDataURL(e.target.files[0]);
+});
+
+// 2. Submit New Log
+window.submitNewLog = async () => {
+    const amt = document.getElementById('new-log-amt').value;
+    const desc = document.getElementById('new-log-desc').value;
+    const imgData = document.getElementById('receipt-preview').src;
+
+    if(!amt || !desc) return alert("Please fill in amount and description.");
+
+    const newEntry = {
+        amount: parseFloat(amt),
+        description: desc,
+        timestamp: new Date().toLocaleString(),
+        receipt: imgData.startsWith('data') ? imgData : null, // Base64 string
+        status: "Verified" // Defaulting to verified for admin entries
+    };
+
+    try {
+        // Send to your backend (requires updating main.py to handle image strings)
+        await Storage.saveManualLog(newEntry); 
+        
+        // Reset Form
+        document.getElementById('new-log-amt').value = "";
+        document.getElementById('new-log-desc').value = "";
+        document.getElementById('receipt-upload').value = "";
+        document.getElementById('receipt-preview').style.display = 'none';
+        
+        syncLogs(); // Refresh the list
+    } catch (e) {
+        alert("Failed to save: " + e.message);
+    }
+};
+
+// 3. Render the list of cards
+async function renderTransparencyLogs() {
+    const listContainer = document.getElementById('transparency-list');
+    const totalEl = document.getElementById('total-sales-amt');
+    
+    try {
+        const data = await Storage.getAdminLogs(); // Assumes this returns an array of objects now
+        let runningTotal = 0;
+
+        listContainer.innerHTML = data.logs.map((log, index) => {
+            const isManual = typeof log === 'object';
+            const amount = isManual ? log.amount : 0;
+            const desc = isManual ? log.description : log;
+            const date = isManual ? log.timestamp : "Generic Log";
+            const receipt = isManual && log.receipt ? log.receipt : null;
+            
+            if(isManual) runningTotal += amount;
+
+            return `
+                <div style="display:flex; align-items:center; justify-content:space-between; background:white; padding:12px; border-radius:10px; border-left: 4px solid var(--gold); box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+                    <div style="display:flex; align-items:center; gap:15px;">
+                        ${receipt ? `<img src="${receipt}" onclick="window.open(this.src)" style="width:40px; height:40px; border-radius:5px; cursor:zoom-in;" title="Click to enlarge">` : `<div style="width:40px; height:40px; background:#eee; border-radius:5px; display:flex; align-items:center; justify-content:center; font-size:0.7rem; color:#aaa;">No Pix</div>`}
+                        <div>
+                            <div style="font-weight:bold; font-size:0.9rem;">${desc}</div>
+                            <div style="font-size:0.7rem; color:#888;">📅 ${date}</div>
+                        </div>
+                    </div>
+                    <div style="text-align:right;">
+                        <div style="color:var(--primary-red); font-weight:bold;">₱${amount.toFixed(2)}</div>
+                        <span style="font-size:0.6rem; background:#e1f5fe; color:#01579b; padding:2px 6px; border-radius:10px; text-transform:uppercase;">Verified</span>
+                        <button onclick="deleteLog(${index})" style="background:none; border:none; color:#ccc; cursor:pointer; font-size:0.8rem; margin-left:10px;">🗑️</button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        totalEl.textContent = `₱${runningTotal.toFixed(2)}`;
+    } catch (e) {
+        console.error("Transparency sync failed", e);
+    }
+}
 
     // 6. Initialize Page
     loadInventory();

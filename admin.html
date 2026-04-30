@@ -61,24 +61,41 @@
         </div>
 
         <div class="middle-row">
-            <div class="card">
+            
+            <!-- Inventory Card -->
+            <div class="card" id="inventory-card">
                 <div style="display:flex; justify-content:space-between; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 15px;">
                     <h3 style="margin:0;">📦 Inventory Stock</h3>
-                    <span style="font-size: 0.7rem; color: var(--gold); cursor:pointer;" onclick="toggleEdit()">Edit Stock</span>
+                    <span id="edit-stock-toggle" style="font-size: 0.7rem; color: var(--gold); cursor:pointer;" onclick="toggleEdit()">Edit Stock</span>
                 </div>
+                
                 <div id="inventory-list"></div>
+                
+                <div id="edit-controls" style="display: none; margin-top: 15px; border-top: 1px solid #eee; padding-top: 15px;">
+                    <button id="save-inventory-btn" style="background:var(--primary-red); color:white; border:none; padding:12px; border-radius:8px; width:100%; cursor:pointer; font-weight:bold;">
+                        Save All Changes
+                    </button>
+                </div>
             </div>
 
+            <!-- Leaderboard Card -->
             <div class="card">
                 <h3>🏆 Sustainability Leaderboard</h3>
                 <div style="overflow-x: auto;">
                     <table style="width:100%; border-collapse: collapse; font-size: 0.9rem;">
-                        <thead><tr style="text-align:left; color:#aaa; font-size:0.7rem;"><th>STUDENT</th><th>ID</th><th style="text-align:right;">BOTTLES</th></tr></thead>
+                        <thead>
+                            <tr style="text-align:left; color:#aaa; font-size:0.7rem;">
+                                <th>STUDENT</th>
+                                <th>ID</th>
+                                <th style="text-align:right;">BOTTLES</th>
+                            </tr>
+                        </thead>
                         <tbody id="db-list"></tbody>
                     </table>
                 </div>
             </div>
-        </div>
+
+        </div> 
 
         <div class="bottom-row">
             <div class="scanner-box" style="display:flex; flex-direction:column; gap:10px;">
@@ -99,81 +116,161 @@
     </div>
 
     <script type="module">
-        import Storage from './js/services/Storage.js';
-        const users = Storage.getAllUsers();
-        let d=0, w=0, m=0;
-        const now = new Date();
+    import Storage from './js/services/Storage.js';
 
-        async function syncLogs() {
-            try {
-                const data = await Storage.getAdminLogs();
-                const logBox = document.getElementById('history-log');
-                logBox.innerHTML = ""; // Clear old text
-                
-                data.logs.forEach(logText => {
-                    // Check if it's a cash log or a redemption log to color it properly
-                    const color = logText.includes("₱") ? "var(--primary-red)" : "green";
-                    logBox.innerHTML += `<div style="color:${color}; padding: 4px 0;">${logText}</div>`;
-                });
-            } catch (e) {
-                console.error("Log sync failed", e);
-            }
+    // 1. State Variables
+    let isEditing = false;
+    let currentStockData = [];
+
+    // 2. Inventory Functions
+    async function loadInventory() {
+        try {
+            const data = await Storage.getInventory(); 
+            currentStockData = data || []; 
+            renderInventory();
+        } catch (e) {
+            console.error("Failed to load inventory", e);
         }
+    }
+
+    function renderInventory() {
+        const listContainer = document.getElementById('inventory-list');
+        if (!listContainer) return;
+
+        if (currentStockData.length === 0) {
+            listContainer.innerHTML = "<p style='color:#888; font-size:0.8rem;'>No inventory data found.</p>";
+            return;
+        }
+
+        listContainer.innerHTML = currentStockData.map((item, index) => {
+            if (isEditing) {
+                return `
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <span style="font-size:0.9rem;">${item.name}</span>
+                        <input type="number" class="stock-input" data-index="${index}" 
+                               value="${item.quantity}" 
+                               style="width: 70px; padding: 5px; border-radius: 5px; border: 1px solid var(--primary-red); text-align:center;">
+                    </div>`;
+            } else {
+                return `
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                        <span style="font-size:0.9rem;">${item.name}</span>
+                        <span style="font-weight:bold; color:var(--primary-red);">${item.quantity}</span>
+                    </div>`;
+            }
+        }).join('');
+    }
+
+    // 3. Window-scoped functions (for HTML onclicks)
+    window.toggleEdit = () => {
+        isEditing = !isEditing;
+        const btn = document.getElementById('edit-stock-toggle');
+        const controls = document.getElementById('edit-controls');
         
-        // Call it immediately when the page loads!
-        syncLogs();
-
-        // --- START WEBCAM SCANNER ---
-        let isProcessing = false; // Prevents scanning the same code 50 times a second
-
-        function onScanSuccess(decodedText, decodedResult) {
-            if (isProcessing) return; // Ignore if we are already processing a scan
-            isProcessing = true;
-
-            try {
-                // Check if the QR code is actually our ECO-HAT JSON format
-                const data = JSON.parse(decodedText);
-                if (!data.student_id || !data.item_name) throw new Error("Invalid QR Format");
-
-                const confirmRedeem = confirm(`Scanned!\nStudent: ${data.student_id}\nItem: ${data.item_name}\nCost: ${data.price} Puntos\n\nApprove this transaction?`);
-                
-                if (confirmRedeem) {
-                    Storage.processRedemption(decodedText)
-                        .then(msg => {
-                            alert("✅ " + msg);
-                            syncLogs();
-                            // Log it in the admin UI
-                            const log = document.getElementById('history-log');
-                            log.innerHTML = `<div style="color:green;">${data.student_id} redeemed ${data.item_name}</div>` + log.innerHTML;
-                        })
-                        .catch(err => alert("❌ Error: " + err.message))
-                        .finally(() => setTimeout(() => { isProcessing = false; }, 2000)); // Wait 2 seconds before allowing next scan
-                } else {
-                    isProcessing = false;
-                }
-            } catch (e) {
-                console.log("Ignored non-EcoHat QR Code");
-                isProcessing = false; // Not our QR code, keep scanning
-            }
+        btn.textContent = isEditing ? "Cancel" : "Edit Stock";
+        if (controls) {
+            controls.style.display = isEditing ? "block" : "none";
         }
+        renderInventory();
+    };
 
-        window.saveLog = async () => {
-            const amtInput = document.getElementById('sale-amt');
-            const amt = amtInput.value;
-            if(!amt) return;
-            
-            try {
-                await Storage.saveManualLog(amt);
-                amtInput.value = ""; // clear the box
-                syncLogs(); // Re-download the logs instantly!
-            } catch (e) {
-                alert("Failed to save: " + e.message);
+    window.saveLog = async () => {
+        const amtInput = document.getElementById('sale-amt');
+        const amt = amtInput.value;
+        if(!amt) return;
+        try {
+            await Storage.saveManualLog(amt);
+            amtInput.value = "";
+            syncLogs();
+        } catch (e) {
+            alert("Failed to save: " + e.message);
+        }
+    };
+
+    // 4. Event Listeners
+    document.getElementById('save-inventory-btn').addEventListener('click', async () => {
+    const inputs = document.querySelectorAll('.stock-input');
+    const updatedItems = [];
+    
+    inputs.forEach(input => {
+        const idx = parseInt(input.getAttribute('data-index'));
+        const item = currentStockData[idx];
+        
+        // Use item.id if it exists, otherwise use the name or index as a fallback
+        const identifier = item.id || item.name; 
+        
+        updatedItems.push({ 
+            id: identifier, 
+            quantity: parseInt(input.value) 
+        });
+    });
+
+    console.log("Attempting to update with:", updatedItems);
+
+    try {
+        const saveBtn = document.getElementById('save-inventory-btn');
+        saveBtn.textContent = "Updating...";
+        saveBtn.disabled = true;
+
+        // This is where it's failing - check Storage.js if this continues
+        await Storage.updateInventory(updatedItems); 
+        
+        alert("✅ Inventory Updated!");
+        isEditing = false;
+        document.getElementById('edit-stock-toggle').textContent = "Edit Stock";
+        document.getElementById('edit-controls').style.display = "none";
+        loadInventory();
+    } catch (e) {
+        // Detailed error for debugging
+        alert("❌ Update failed: " + e.message);
+        console.error("Full error details:", e);
+    } finally {
+        const saveBtn = document.getElementById('save-inventory-btn');
+        saveBtn.disabled = false;
+        saveBtn.textContent = "Save All Changes";
+    }
+});
+
+    // 5. Logs & Scanner
+    async function syncLogs() {
+        try {
+            const data = await Storage.getAdminLogs();
+            const logBox = document.getElementById('history-log');
+            logBox.innerHTML = "";
+            data.logs.forEach(logText => {
+                const color = logText.includes("₱") ? "var(--primary-red)" : "green";
+                logBox.innerHTML += `<div style="color:${color}; padding: 4px 0;">${logText}</div>`;
+            });
+        } catch (e) {
+            console.error("Log sync failed", e);
+        }
+    }
+
+    let isProcessing = false;
+    function onScanSuccess(decodedText) {
+        if (isProcessing) return;
+        isProcessing = true;
+        try {
+            const data = JSON.parse(decodedText);
+            if (confirm(`Approve redemption for ${data.student_id}?`)) {
+                Storage.processRedemption(decodedText)
+                    .then(() => {
+                        syncLogs();
+                        loadInventory();
+                    })
+                    .finally(() => setTimeout(() => { isProcessing = false; }, 2000));
+            } else {
+                isProcessing = false;
             }
-        };
+        } catch (e) {
+            isProcessing = false;
+        }
+    }
 
-        // Initialize the camera
-        const html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: {width: 250, height: 250} }, false);
-        html5QrcodeScanner.render(onScanSuccess);
-    </script>
-</body>
-</html>
+    // 6. Initialize Page
+    loadInventory();
+    syncLogs();
+    const html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 }, false);
+    html5QrcodeScanner.render(onScanSuccess);
+
+</script>

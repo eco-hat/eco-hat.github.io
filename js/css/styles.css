@@ -125,3 +125,41 @@ header {
     }
     .redeem-btn { width: auto; }
 }
+
+/* --- Admin Inventory Refinements --- */
+
+.stock-input {
+    transition: all 0.2s ease;
+    text-align: center;
+    font-weight: bold;
+    color: var(--maroon);
+}
+
+.stock-input:focus {
+    outline: none;
+    border-color: var(--maroon) !important;
+    box-shadow: 0 0 5px rgba(139, 0, 0, 0.2);
+    background-color: #fff8f8;
+}
+
+#edit-stock-toggle {
+    transition: color 0.2s;
+}
+
+#edit-stock-toggle:hover {
+    color: var(--maroon) !important;
+    text-decoration: underline;
+}
+
+/* Ensures the Save button looks consistent with your theme */
+#save-inventory-btn {
+    transition: transform 0.1s, background 0.2s;
+}
+
+#save-inventory-btn:hover {
+    background: #600000 !important;
+}
+
+#save-inventory-btn:active {
+    transform: scale(0.98);
+}

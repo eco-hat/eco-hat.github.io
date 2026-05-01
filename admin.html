@@ -231,11 +231,16 @@
     }
 
     // --- SCANNER ---
-    function onScanSuccess(decodedText) {
-        if (confirm(`Approve redemption?`)) {
-            Storage.processRedemption(decodedText).then(() => location.reload());
+    let isProcessing = false;
+        function onScanSuccess(decodedText) {
+            if (isProcessing) return;
+            isProcessing = true;
+            if (confirm(`Approve redemption?`)) {
+                Storage.processRedemption(decodedText)
+                    .then(() => location.reload())
+                    .finally(() => isProcessing = false);
+            } else { isProcessing = false; }
         }
-    }
     </script>
 </body>
 </html>

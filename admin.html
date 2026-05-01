@@ -233,14 +233,24 @@
     // --- SCANNER ---
     let isProcessing = false;
         function onScanSuccess(decodedText) {
-            if (isProcessing) return;
-            isProcessing = true;
-            if (confirm(`Approve redemption?`)) {
-                Storage.processRedemption(decodedText)
-                    .then(() => location.reload())
-                    .finally(() => isProcessing = false);
-            } else { isProcessing = false; }
-        }
+    if (confirm(`Approve redemption?`)) {
+        // Immediate visual feedback
+        const scannerBox = document.querySelector('.scanner-box');
+        scannerBox.style.opacity = "0.5";
+        scannerBox.innerHTML += "<p id='loading-msg' style='color:var(--gold)'>Processing deduction... Please wait.</p>";
+
+        Storage.processRedemption(decodedText)
+            .then(() => {
+                alert("✅ Supplies redeemed successfully!");
+                location.reload();
+            })
+            .catch(err => {
+                alert("❌ Error: " + err.message);
+                document.getElementById('loading-msg').remove();
+                scannerBox.style.opacity = "1";
+            });
+    }
+}
     </script>
 </body>
 </html>

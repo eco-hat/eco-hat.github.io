@@ -230,26 +230,39 @@
         } catch (e) { console.error("Transparency sync failed", e); }
     }
 
-    // --- SCANNER ---
+// --- SCANNER ---
+let isRedeeming = false; // Add this state lock at the top of your script area
 
-        function onScanSuccess(decodedText) {
-            if (confirm(`Approve redemption?`)) {
+function onScanSuccess(decodedText) {
+    // If a process is already running, exit immediately to prevent duplicates
+    if (isRedeeming) return; 
+
+    if (confirm(`Approve redemption?`)) {
+        isRedeeming = true; // Lock the scanner
+
         // Immediate visual feedback
         const scannerBox = document.querySelector('.scanner-box');
         scannerBox.style.opacity = "0.5";
-        scannerBox.innerHTML += "<p id='loading-msg' style='color:var(--gold)'>Processing deduction... Please wait.</p>";
+        
+        // Check if loading message already exists before adding
+        if (!document.getElementById('loading-msg')) {
+            scannerBox.innerHTML += "<p id='loading-msg' style='color:var(--gold)'>Processing deduction... Please wait.</p>";
+        }
 
         Storage.processRedemption(decodedText)
             .then(() => {
                 alert("✅ Supplies redeemed successfully!");
-                location.reload();
+                location.reload(); // Page reload will reset the lock
             })
             .catch(err => {
                 alert("❌ Error: " + err.message);
-                document.getElementById('loading-msg').remove();
+                // Unlock so admin can try scanning again if it failed
+                isRedeeming = false; 
+                const msg = document.getElementById('loading-msg');
+                if (msg) msg.remove();
                 scannerBox.style.opacity = "1";
             });
-        }
+    }
 }
     </script>
 </body>

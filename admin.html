@@ -231,9 +231,9 @@
     }
 
     // --- SCANNER ---
-    let isProcessing = false;
+
         function onScanSuccess(decodedText) {
-    if (confirm(`Approve redemption?`)) {
+            if (confirm(`Approve redemption?`)) {
         // Immediate visual feedback
         const scannerBox = document.querySelector('.scanner-box');
         scannerBox.style.opacity = "0.5";
@@ -249,7 +249,7 @@
                 document.getElementById('loading-msg').remove();
                 scannerBox.style.opacity = "1";
             });
-    }
+        }
 }
     </script>
 </body>

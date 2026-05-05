@@ -30,7 +30,8 @@
             <span>♻️</span>
             <h1 style="margin:0; font-size: 1.2rem;">ECO-HAT ADMIN</h1>
         </div>
-        <button onclick="location.href='index.html'" class="logout-btn">Logout</button>
+        <!-- UPDATED: Removed inline onclick and added an ID for the JavaScript listener -->
+        <button id="logout-btn" class="logout-btn">Logout</button>
     </header>
 
     <div class="admin-container">
@@ -114,13 +115,21 @@
     let isEditing = false;
     let currentStockData = [];
 
-    // --- INITIALIZATION ---
+    // --- INITIALIZATION (Consolidated to prevent overwriting) ---
     window.onload = () => {
         loadInventory();
         renderTransparencyLogs();
+        updateAnalytics(); 
+        
         const html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 }, false);
         html5QrcodeScanner.render(onScanSuccess);
     };
+
+    // --- LOGOUT LOGIC ---
+    document.getElementById('logout-btn').addEventListener('click', () => {
+        Storage.logout(); // Completely erase the session memory
+        window.location.href = 'index.html'; // Safely redirect to login
+    });
 
     // --- INVENTORY ---
     async function loadInventory() {
@@ -165,13 +174,12 @@
         } catch (e) { alert("❌ Failed: " + e.message); }
     });
 
-    // Analytics
+    // --- ANALYTICS ---
     async function updateAnalytics() {
         try {
             const response = await fetch(`${API_BASE}/admin/analytics`);
             const data = await response.json();
 
-            // Update the H1 tags by their IDs[cite: 9]
             document.getElementById('total-day').textContent = data.today;
             document.getElementById('total-week').textContent = data.week;
             document.getElementById('total-month').textContent = data.month;
@@ -179,16 +187,6 @@
             console.error("Error fetching analytics:", error);
         }
     }
-
-    // Call it inside window.onload so it runs when the page opens
-    window.onload = () => {
-        loadInventory();
-        renderTransparencyLogs();
-        updateAnalytics(); // New function call
-        
-        const html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 }, false);
-        html5QrcodeScanner.render(onScanSuccess);
-    };
 
     // --- TRANSPARENCY SYSTEM ---
     document.getElementById('receipt-upload').addEventListener('change', function(e) {
@@ -255,40 +253,36 @@
         } catch (e) { console.error("Transparency sync failed", e); }
     }
 
-// --- SCANNER ---
-let isRedeeming = false; // Add this state lock at the top of your script area
+    // --- SCANNER ---
+    let isRedeeming = false;
 
-function onScanSuccess(decodedText) {
-    // If a process is already running, exit immediately to prevent duplicates
-    if (isRedeeming) return; 
+    function onScanSuccess(decodedText) {
+        if (isRedeeming) return; 
 
-    if (confirm(`Approve redemption?`)) {
-        isRedeeming = true; // Lock the scanner
+        if (confirm(`Approve redemption?`)) {
+            isRedeeming = true; 
 
-        // Immediate visual feedback
-        const scannerBox = document.querySelector('.scanner-box');
-        scannerBox.style.opacity = "0.5";
-        
-        // Check if loading message already exists before adding
-        if (!document.getElementById('loading-msg')) {
-            scannerBox.innerHTML += "<p id='loading-msg' style='color:var(--gold)'>Processing deduction... Please wait.</p>";
+            const scannerBox = document.querySelector('.scanner-box');
+            scannerBox.style.opacity = "0.5";
+            
+            if (!document.getElementById('loading-msg')) {
+                scannerBox.innerHTML += "<p id='loading-msg' style='color:var(--gold)'>Processing deduction... Please wait.</p>";
+            }
+
+            Storage.processRedemption(decodedText)
+                .then(() => {
+                    alert("✅ Supplies redeemed successfully!");
+                    location.reload(); 
+                })
+                .catch(err => {
+                    alert("❌ Error: " + err.message);
+                    isRedeeming = false; 
+                    const msg = document.getElementById('loading-msg');
+                    if (msg) msg.remove();
+                    scannerBox.style.opacity = "1";
+                });
         }
-
-        Storage.processRedemption(decodedText)
-            .then(() => {
-                alert("✅ Supplies redeemed successfully!");
-                location.reload(); // Page reload will reset the lock
-            })
-            .catch(err => {
-                alert("❌ Error: " + err.message);
-                // Unlock so admin can try scanning again if it failed
-                isRedeeming = false; 
-                const msg = document.getElementById('loading-msg');
-                if (msg) msg.remove();
-                scannerBox.style.opacity = "1";
-            });
     }
-}
     </script>
 </body>
 </html>

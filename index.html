@@ -32,14 +32,14 @@
             box-sizing: border-box;
         }
 
-        input { 
+        input[type="text"], input[type="password"] { 
             width: 100%; 
             padding: 12px; 
             margin: 8px 0; 
             border-radius: 10px; 
             border: 1px solid #ddd; 
             box-sizing: border-box;
-            font-size: 16px; /* Prevents auto-zoom on mobile */
+            font-size: 16px; 
         }
 
         button { 
@@ -49,6 +49,19 @@
             border-radius: 10px; 
             cursor: pointer; 
             font-weight: bold; 
+        }
+
+        .login-options {
+            display: flex;
+            align-items: center;
+            margin: 10px 0;
+            font-size: 0.85rem;
+            color: #666;
+        }
+
+        .login-options input {
+            width: auto;
+            margin-right: 8px;
         }
 
         .divider { display: flex; align-items: center; margin: 20px 0; color: #ccc; font-size: 0.8rem; }
@@ -66,6 +79,7 @@
         <p style="text-align: center; color: #666; font-size: 0.9rem; margin-top: 0;">Sustainability Portal</p>
         
         <div style="margin-top: 20px;">
+            <!-- Registration Section -->
             <div style="background: #fff8f8; padding: 15px; border-radius: 15px; border: 1px solid #fee;">
                 <small style="color: var(--primary-red); font-weight: bold;">New Student Registration</small>
                 <input id="reg-name" type="text" placeholder="Full Name">
@@ -76,10 +90,18 @@
             
             <div class="divider"><hr><span style="padding:0 10px;">OR</span><hr></div>
             
+            <!-- Login Section -->
             <small style="color: #666; font-weight: bold;">Account Login</small>
             <input id="login-id" type="text" placeholder="Student ID / Admin ID">
             <input id="login-pass" type="password" placeholder="Password">
-            <button id="login-btn" style="background: #444; margin-top: 10px; color: white;">Login to Dashboard</button>
+            
+            <div class="login-options">
+                <label style="display: flex; align-items: center; cursor: pointer;">
+                    <input type="checkbox" id="rememberMe"> Remember Me
+                </label>
+            </div>
+            
+            <button id="login-btn" style="background: #444; color: white;">Login to Dashboard</button>
         </div>
     </div>
 
@@ -87,35 +109,39 @@
         import User from './js/models/User.js';
         import Storage from './js/services/Storage.js';
 
+        // --- AUTO-LOGIN CHECK ---
+        window.addEventListener('load', () => {
+            // Using 'currentUser' so it matches the rest of the application
+            const savedSession = localStorage.getItem('currentUser') || sessionStorage.getItem('currentUser');
+            if (savedSession) {
+                const user = JSON.parse(savedSession);
+                // Redirect based on saved role
+                window.location.href = user.role === "admin" ? "admin.html" : "dashboard.html";
+            }
+        });
+
         // --- REGISTRATION LOGIC ---
         document.getElementById('reg-btn').addEventListener('click', async () => {
             const name = document.getElementById("reg-name").value.trim();
             const id = document.getElementById("reg-id").value.trim();
             const pass = document.getElementById("reg-pass").value.trim();
+            
             if(!name || !id || !pass) return alert("Fill all fields");
 
-            // The Strict Name Format Check
             const namePattern = /^[a-zA-Z\s.]+$/;
-            if (!namePattern.test(name)) {
-                return alert("Invalid Name! Only letters, spaces, and dots (.) are allowed.");
-            }
+            if (!namePattern.test(name)) return alert("Invalid Name!");
 
-            // The Strict ID Format Check
             const idPattern = /^\d{4}-\d{5}-BN-\d$/;
-            if (!idPattern.test(id)) {
-                return alert("Invalid ID format! Please use the format: XXXX-XXXXX-BN-X");
-            }
+            if (!idPattern.test(id)) return alert("Invalid ID format!");
 
             const btn = document.getElementById('reg-btn');
             try {
                 btn.textContent = "Registering...";
                 btn.disabled = true;
-
                 const newUser = new User(name, id, pass);
                 await Storage.register(newUser); 
-                
                 alert("Registered! You can now login.");
-                document.querySelectorAll('input').forEach(i => i.value = "");
+                document.querySelectorAll('input:not([type="checkbox"])').forEach(i => i.value = "");
             } catch (e) { 
                 alert(e.message); 
             } finally {
@@ -128,21 +154,30 @@
         document.getElementById('login-btn').addEventListener('click', async () => {
             const idInput = document.getElementById("login-id").value.trim();
             const passInput = document.getElementById("login-pass").value.trim();
+            const rememberMe = document.getElementById('rememberMe').checked;
 
             const btn = document.getElementById('login-btn');
             try {
                 btn.textContent = "Logging in...";
                 btn.disabled = true;
 
-                // Wait for the API and get the user profile back
                 const userData = await Storage.login(idInput, passInput); 
                 
-                // Route them based on their database role!
-                if (userData.role === "admin") {
-                    window.location.href = "admin.html";
+                const sessionPayload = JSON.stringify(userData);
+                
+                // Clear any old, conflicting sessions first
+                localStorage.removeItem('currentUser');
+                sessionStorage.removeItem('currentUser');
+
+                // Store session based on "Remember Me" preference using 'currentUser'
+                if (rememberMe) {
+                    localStorage.setItem('currentUser', sessionPayload);
                 } else {
-                    window.location.href = "dashboard.html"; 
+                    sessionStorage.setItem('currentUser', sessionPayload);
                 }
+
+                // Routing
+                window.location.href = userData.role === "admin" ? "admin.html" : "dashboard.html";
 
             } catch (e) { 
                 alert(e.message); 

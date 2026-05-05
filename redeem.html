@@ -7,6 +7,13 @@
     <link rel="stylesheet" href="css/styles.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
+        #qty-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; justify-content: center; align-items: center; }
+        .qty-controls { display: flex; align-items: center; justify-content: center; gap: 15px; margin: 20px 0; }
+        .qty-btn { background: #eee; border: none; padding: 10px 18px; font-size: 1.5rem; border-radius: 8px; cursor: pointer; transition: 0.2s; }
+        .qty-btn:hover { background: #ddd; }
+        .qty-btn:disabled { opacity: 0.4; cursor: not-allowed; background: #eee; }
+        .qty-input { width: 60px; text-align: center; font-size: 1.2rem; padding: 8px; border: 2px solid #eee; border-radius: 8px; font-weight: bold; }
+        
         :root { --maroon: #8B0000; --gold: #DAA520; --bg: #f8f9fa; }
         body { background: var(--bg); font-family: 'Segoe UI', sans-serif; margin: 0; }
         
@@ -96,6 +103,39 @@
         <div class="supply-grid" id="supply-list"></div>
     </div>
 
+    <!-- Quantity Selection Modal -->
+    <div id="qty-modal">
+        <div class="modal-content">
+            <h3 style="color:var(--maroon); margin-top:0;" id="qty-item-name">Item Name</h3>
+            
+            <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 15px; text-align: left; font-size: 0.9rem;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                    <span>Available Puntos:</span>
+                    <b id="qty-user-points" style="color:var(--gold);">0</b>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                    <span>Cost per unit:</span>
+                    <b id="qty-item-price">0</b>
+                </div>
+            </div>
+
+            <div class="qty-controls">
+                <button id="btn-qty-minus" class="qty-btn" onclick="changeQty(-1)">-</button>
+                <input type="number" id="qty-value" class="qty-input" value="1" oninput="handleManualInput(this.value)">
+                <button id="btn-qty-plus" class="qty-btn" onclick="changeQty(1)">+</button>
+            </div>
+
+            <div style="margin: 20px 0; font-size: 1.1rem; border-top: 1px dashed #ccc; padding-top: 15px;">
+                Total Cost: <b id="qty-total-cost" style="color:var(--maroon); font-size: 1.3rem;">0</b> Puntos
+            </div>
+
+            <div style="display:flex; gap:10px;">
+                <button onclick="document.getElementById('qty-modal').style.display='none'" class="redeem-btn" style="background:#666;">Cancel</button>
+                <button id="qty-confirm-btn" class="redeem-btn" onclick="confirmQuantity()">Generate QR</button>
+            </div>
+        </div>
+    </div>
+
     <div id="qr-modal">
         <div class="modal-content">
             <h3 style="color:var(--maroon);">Redemption QR</h3>
@@ -121,20 +161,17 @@
             { name: "Ruler", price: 25, icon: "📏" }
         ];
 
-        // Fetch fresh data from API before rendering the page
+        let currentPoints = 0;
+
         async function loadRedeemPage() {
             try {
-                // Fetch fresh points from the database
                 const dbData = await Storage.getUserHistory(localUser.studentNumber);
-                const currentPoints = dbData.points;
-                
-                // Update the UI with real points
+                currentPoints = dbData.points;
                 document.getElementById('user-points').textContent = currentPoints;
 
                 const list = document.getElementById('supply-list');
                 list.innerHTML = ""; 
 
-                // Render buttons based on LIVE points
                 supplies.forEach(s => {
                     const canAfford = currentPoints >= s.price;
                     list.innerHTML += `
@@ -142,38 +179,110 @@
                             <span style="font-size:3rem;">${s.icon}</span>
                             <h4>${s.name}</h4>
                             <p style="color:var(--maroon); font-weight:bold;">${s.price} Puntos</p>
-                            <button class="redeem-btn" ${canAfford ? '' : 'disabled'} onclick="showQR('${s.name}', ${s.price})">Redeem Item</button>
+                            <!-- Changed to openQtyModal -->
+                            <button class="redeem-btn" ${canAfford ? '' : 'disabled'} onclick="openQtyModal('${s.name}', ${s.price})">Redeem Item</button>
                         </div>`;
                 });
             } catch (error) {
-                console.error("Failed to load points:", error);
-                alert("Failed to load your latest points. Please refresh the page.");
+                alert("Failed to load your latest points.");
             }
         }
 
-        // Generate the QR Code
-        window.showQR = (name, price) => {
+        // --- QUANTITY MODAL LOGIC ---
+        window.selectedItem = null;
+        window.selectedPrice = 0;
+        window.currentQty = 1;
+
+        window.openQtyModal = (name, price) => {
+            window.selectedItem = name;
+            window.selectedPrice = price;
+            window.currentQty = 1;
+            
+            document.getElementById('qty-item-name').textContent = `Redeem ${name}`;
+            document.getElementById('qty-user-points').textContent = currentPoints;
+            document.getElementById('qty-item-price').textContent = price;
+            
+            updateQtyUI();
+            document.getElementById('qty-modal').style.display = 'flex';
+        };
+
+        window.changeQty = (delta) => {
+            const maxAfford = Math.floor(currentPoints / window.selectedPrice);
+            let newQty = window.currentQty + delta;
+            
+            // Prevent going below 1, or selecting more than they can afford
+            if (newQty >= 1 && newQty <= maxAfford) {
+                window.currentQty = newQty;
+                updateQtyUI();
+            }
+        };
+
+        // --- REAL-TIME TYPING CALCULATION ---
+        window.handleManualInput = (val) => {
+            const maxAfford = Math.floor(currentPoints / window.selectedPrice);
+            let newQty = parseInt(val);
+
+            // If they delete the number entirely, temporarily show 0 cost
+            if (isNaN(newQty) || newQty < 1) {
+                document.getElementById('qty-total-cost').textContent = "0";
+                window.currentQty = 1; // Fallback safety
+                return;
+            }
+
+            // If they type a number too high, auto-correct it to their max affordable amount
+            if (newQty > maxAfford) {
+                newQty = maxAfford;
+                document.getElementById('qty-value').value = maxAfford; 
+            }
+
+            // Update the state and perform the dynamic calculation
+            window.currentQty = newQty;
+            const totalCost = window.currentQty * window.selectedPrice;
+            document.getElementById('qty-total-cost').textContent = totalCost;
+        };
+
+        window.updateQtyUI = () => {
+            // Update the input box and total cost text
+            document.getElementById('qty-value').value = window.currentQty;
+            const total = window.currentQty * window.selectedPrice;
+            document.getElementById('qty-total-cost').textContent = total;
+
+            // NEW: Calculate max affordable quantity
+            const maxAfford = Math.floor(currentPoints / window.selectedPrice);
+            
+            // NEW: Lock or unlock the buttons dynamically
+            document.getElementById('btn-qty-minus').disabled = (window.currentQty <= 1);
+            document.getElementById('btn-qty-plus').disabled = (window.currentQty >= maxAfford);
+        };
+
+        window.confirmQuantity = () => {
+            document.getElementById('qty-modal').style.display = 'none';
+            // Pass the quantity to the QR generator
+            showQR(window.selectedItem, window.selectedPrice, window.currentQty);
+        };
+
+        // --- QR GENERATOR LOGIC ---
+        window.showQR = (name, unitPrice, qty) => {
             const txnId = Math.floor(1000 + Math.random() * 9000);
+            const totalCost = unitPrice * qty; // Send the TOTAL cost to the database
+            
             document.getElementById('qr-modal').style.display = 'flex';
-            document.getElementById('txn-display').textContent = `TXN-ID: ${txnId} | Item: ${name}`;
+            document.getElementById('txn-display').textContent = `TXN-ID: ${txnId} | ${qty}x ${name}`;
             
             const qrData = JSON.stringify({
                 student_id: localUser.studentNumber,
                 item_name: name,
-                price: price,
+                price: totalCost, 
+                qty: qty, // NEW: Pack the quantity into the QR code
                 txn: txnId
             });
 
             document.getElementById('qrcode').innerHTML = "";
             new QRCode(document.getElementById("qrcode"), { 
-                text: qrData, 
-                width: 220,          // Increased size for easier focusing
-                height: 220, 
-                colorDark: "#000000" // Pure black for maximum contrast
+                text: qrData, width: 220, height: 220, colorDark: "#000000" 
             });
         };
 
-        // Run the fetch function when page loads
         loadRedeemPage();
     </script>
 </body>

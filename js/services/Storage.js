@@ -13,7 +13,8 @@ export default class Storage {
         }
     }
 
-    static async login(id, pass) {
+    // UPDATED: Now accepts the rememberMe flag
+    static async login(id, pass, rememberMe) {
         const response = await fetch(`${this.API_URL}/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -23,13 +24,28 @@ export default class Storage {
             const errorData = await response.json();
             throw new Error(errorData.detail || "Invalid login");
         }
+        
         const userData = await response.json();
-        localStorage.setItem('currentUser', JSON.stringify(userData)); 
+        
+        // Clear old sessions to prevent conflicts
+        localStorage.removeItem('currentUser');
+        sessionStorage.removeItem('currentUser');
+
+        // Store based on checkbox preference
+        if (rememberMe) {
+            localStorage.setItem('currentUser', JSON.stringify(userData)); 
+        } else {
+            sessionStorage.setItem('currentUser', JSON.stringify(userData));
+        }
+        
         return userData;
     }
 
+    // UPDATED: Now checks both local and session storage
     static getCurrentUser() {
-        return JSON.parse(localStorage.getItem('currentUser'));
+        const localData = localStorage.getItem('currentUser');
+        const sessionData = sessionStorage.getItem('currentUser');
+        return JSON.parse(localData || sessionData);
     }
 
     static async getUserHistory(studentId) {
@@ -38,8 +54,10 @@ export default class Storage {
         return await response.json();
     }
 
+    // UPDATED: Now completely destroys both storage types to prevent ghost sessions
     static logout() { 
         localStorage.removeItem('currentUser'); 
+        sessionStorage.removeItem('currentUser');
     }
 
     // --- ADMIN METHODS ---
@@ -51,7 +69,6 @@ export default class Storage {
             return await response.json();
         } catch (err) {
             console.warn("API Offline, using fallback data.");
-            // This ensures you can still see inputs to test the UI!
             return [
                 { id: 1, name: "Ballpen", quantity: 0 },
                 { id: 2, name: "Notebook", quantity: 0 },
@@ -61,21 +78,20 @@ export default class Storage {
     }
 
     static async updateInventory(updatedItems) {
-    console.log("Sending to Backend:", JSON.stringify({ items: updatedItems }));
-    
-    const response = await fetch(`${this.API_URL}/admin/inventory-update`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items: updatedItems })
-    });
+        console.log("Sending to Backend:", JSON.stringify({ items: updatedItems }));
+        
+        const response = await fetch(`${this.API_URL}/admin/inventory-update`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ items: updatedItems })
+        });
 
-    if (!response.ok) {
-        // This grabs the detailed error from FastAPI (e.g., 404 or 422)
-        const errorData = await response.json().catch(() => ({ detail: "Route not found on server" }));
-        throw new Error(errorData.detail || `Server Error: ${response.status}`);
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ detail: "Route not found on server" }));
+            throw new Error(errorData.detail || `Server Error: ${response.status}`);
+        }
+        return await response.json();
     }
-    return await response.json();
-}
 
     static async processRedemption(qrData) {
         const response = await fetch(`${this.API_URL}/process-redemption`, {

@@ -1,5 +1,5 @@
 export default class Storage {
-    static API_URL = "https://ecohat-fastapi.onrender.com";
+    static API_URL = "https://ecohat-fast-api.vercel.com";
 
     static async register(user) {
         const response = await fetch(`${this.API_URL}/register`, {

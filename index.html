@@ -2,151 +2,170 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>ECO-HAT | Sustainability Portal</title>
     <link rel="stylesheet" href="js/css/styles.css">
     <style>
         :root { 
             --primary-red: #8B0000; 
-            --bg-gray: #f5f5f5; 
-            --card-shadow: 0 4px 15px rgba(0,0,0,0.08); 
+            --bg-gray: #f0f2f5; 
+            --card-shadow: 0 10px 25px rgba(0,0,0,0.1); 
         }
 
         body { 
-            font-family: 'Segoe UI', sans-serif; 
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
             margin: 0; 
             background: var(--bg-gray); 
             display: flex; 
             justify-content: center; 
             align-items: center; 
-            min-height: 100vh; 
+            min-height: 100vh;
+            /* Added padding to prevent card from touching screen edges on small phones */
+            padding: 20px;
+            box-sizing: border-box;
         }
 
         .card { 
             background: white; 
-            padding: 25px; 
-            border-radius: 20px; 
+            padding: 40px 30px; 
+            border-radius: 24px; 
             box-shadow: var(--card-shadow); 
-            width: 90%; 
-            max-width: 380px; 
+            width: 100%; 
+            /* Responsive width */
+            max-width: 400px; 
             box-sizing: border-box;
+            transition: all 0.3s ease;
+        }
+
+        .logo-container { text-align: center; margin-bottom: 25px; }
+        .logo-text { 
+            color: var(--primary-red); 
+            font-size: 2.2rem; 
+            font-weight: bold; 
+            margin: 0; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            gap: 12px;
         }
 
         input[type="text"], input[type="password"] { 
             width: 100%; 
-            padding: 12px; 
-            margin: 8px 0; 
-            border-radius: 10px; 
-            border: 1px solid #ddd; 
-            box-sizing: border-box;
+            padding: 14px; 
+            margin: 10px 0; 
+            border-radius: 12px; 
+            border: 1.5px solid #eee; 
+            box-sizing: border-box; 
+            /* 16px is the minimum to prevent iOS auto-zoom */
             font-size: 16px; 
+            outline: none;
+            transition: border-color 0.2s;
+            -webkit-appearance: none;
+            appearance: none; /* Removes default iOS inner shadows */
         }
+
+        input:focus { border-color: var(--primary-red); }
 
         button { 
             width: 100%; 
-            padding: 12px; 
+            padding: 14px; 
             border: none; 
-            border-radius: 10px; 
+            border-radius: 12px; 
             cursor: pointer; 
-            font-weight: bold; 
+            font-weight: 600; 
+            font-size: 16px; 
+            margin-top: 10px;
+            background: #333; 
+            color: white;
+            transition: background 0.3s, transform 0.1s;
+            /* Fix for sticky hover on mobile */
+            -webkit-tap-highlight-color: transparent;
         }
 
-        .login-options {
-            display: flex;
+        button:active { transform: scale(0.98); background: #000; }
+        
+        .footer-links {
+            display: flex; 
+            justify-content: space-between; 
             align-items: center;
-            margin: 10px 0;
-            font-size: 0.85rem;
+            margin: 15px 0; 
+            font-size: 0.85rem; 
             color: #666;
         }
 
-        .login-options input {
-            width: auto;
-            margin-right: 8px;
+        .link-text { 
+            color: var(--primary-red); 
+            text-decoration: none; 
+            font-weight: 600; 
+            display: inline-block;
         }
 
-        .divider { display: flex; align-items: center; margin: 20px 0; color: #ccc; font-size: 0.8rem; }
-        .divider hr { flex: 1; border: 0; border-top: 1px solid #eee; }
+        .toggle-note { 
+            text-align: center; 
+            margin-top: 25px; 
+            font-size: 0.9rem; 
+            color: #555; 
+        }
 
-        @media (max-width: 480px) {
-            .card { padding: 20px; }
-            h2 { font-size: 1.4rem; }
+        /* --- MOBILE RESPONSIVENESS FIXES --- */
+        @media (max-width: 400px) {
+            .card {
+                padding: 30px 20px;
+                border-radius: 20px;
+            }
+            .logo-text {
+                font-size: 1.8rem;
+            }
+            .footer-links {
+                flex-direction: column;
+                gap: 12px;
+                align-items: flex-start;
+            }
+        }
+
+        /* Landscape mode fix for small phones */
+        @media (max-height: 500px) {
+            body {
+                align-items: flex-start;
+                padding: 40px 20px;
+            }
         }
     </style>
 </head>
 <body>
     <div class="card">
-        <h2 style="text-align: center; color: var(--primary-red); margin-bottom: 5px;">♻ ECO-HAT</h2>
-        <p style="text-align: center; color: #666; font-size: 0.9rem; margin-top: 0;">Sustainability Portal</p>
+        <div class="logo-container">
+            <h2 class="logo-text">♻ ECO-HAT</h2>
+            <p style="color: #666; font-size: 0.95rem; margin-top: 5px;">Sustainability Portal</p>
+        </div>
+
+        <small style="color: #666; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Account Login</small>
+        <input id="login-id" type="text" placeholder="Student ID / Admin ID" inputmode="text">
+        <input id="login-pass" type="password" placeholder="Password">
         
-        <div style="margin-top: 20px;">
-            <!-- Registration Section -->
-            <div style="background: #fff8f8; padding: 15px; border-radius: 15px; border: 1px solid #fee;">
-                <small style="color: var(--primary-red); font-weight: bold;">New Student Registration</small>
-                <input id="reg-name" type="text" placeholder="Full Name">
-                <input id="reg-id" type="text" placeholder="Student ID Number">
-                <input id="reg-pass" type="password" placeholder="Create Password">
-                <button id="reg-btn" style="background: var(--primary-red); color: white; margin-top: 10px;">Register Student</button>
-            </div>
-            
-            <div class="divider"><hr><span style="padding:0 10px;">OR</span><hr></div>
-            
-            <!-- Login Section -->
-            <small style="color: #666; font-weight: bold;">Account Login</small>
-            <input id="login-id" type="text" placeholder="Student ID / Admin ID">
-            <input id="login-pass" type="password" placeholder="Password">
-            
-            <div class="login-options">
-                <label style="display: flex; align-items: center; cursor: pointer;">
-                    <input type="checkbox" id="rememberMe"> Remember Me
-                </label>
-            </div>
-            
-            <button id="login-btn" style="background: #444; color: white;">Login to Dashboard</button>
+        <div class="footer-links">
+            <label style="display: flex; align-items: center; cursor: pointer;">
+                <input type="checkbox" id="rememberMe" style="margin-right: 8px; width: 18px; height: 18px;"> Remember Me
+            </label>
+            <a href="#" class="link-text">Forgot Password?</a>
+        </div>
+        
+        <button id="login-btn">Login to Dashboard</button>
+        
+        <div class="toggle-note">
+            Not registered yet? <a href="register.html" class="link-text">Register Here</a>
         </div>
     </div>
 
     <script type="module">
-        import User from './js/models/User.js';
         import Storage from './js/services/Storage.js';
 
         // --- AUTO-LOGIN CHECK ---
         window.addEventListener('load', () => {
-            // Using 'currentUser' so it matches the rest of the application
             const savedSession = localStorage.getItem('currentUser') || sessionStorage.getItem('currentUser');
             if (savedSession) {
                 const user = JSON.parse(savedSession);
-                // Redirect based on saved role
                 window.location.href = user.role === "admin" ? "admin.html" : "dashboard.html";
-            }
-        });
-
-        // --- REGISTRATION LOGIC ---
-        document.getElementById('reg-btn').addEventListener('click', async () => {
-            const name = document.getElementById("reg-name").value.trim();
-            const id = document.getElementById("reg-id").value.trim();
-            const pass = document.getElementById("reg-pass").value.trim();
-            
-            if(!name || !id || !pass) return alert("Fill all fields");
-
-            const namePattern = /^[a-zA-Z\s.]+$/;
-            if (!namePattern.test(name)) return alert("Invalid Name!");
-
-            const idPattern = /^\d{4}-\d{5}-BN-\d$/;
-            if (!idPattern.test(id)) return alert("Invalid ID format!");
-
-            const btn = document.getElementById('reg-btn');
-            try {
-                btn.textContent = "Registering...";
-                btn.disabled = true;
-                const newUser = new User(name, id, pass);
-                await Storage.register(newUser); 
-                alert("Registered! You can now login.");
-                document.querySelectorAll('input:not([type="checkbox"])').forEach(i => i.value = "");
-            } catch (e) { 
-                alert(e.message); 
-            } finally {
-                btn.textContent = "Register Student";
-                btn.disabled = false;
             }
         });
 
@@ -155,35 +174,33 @@
             const idInput = document.getElementById("login-id").value.trim();
             const passInput = document.getElementById("login-pass").value.trim();
             const rememberMe = document.getElementById('rememberMe').checked;
-
             const btn = document.getElementById('login-btn');
+
+            if (!idInput || !passInput) return alert("Please enter both ID and Password");
+
             try {
-                btn.textContent = "Logging in...";
+                btn.textContent = "Authenticating...";
                 btn.disabled = true;
 
                 const userData = await Storage.login(idInput, passInput); 
-                
                 const sessionPayload = JSON.stringify(userData);
                 
-                // Clear any old, conflicting sessions first
                 localStorage.removeItem('currentUser');
                 sessionStorage.removeItem('currentUser');
 
-                // Store session based on "Remember Me" preference using 'currentUser'
                 if (rememberMe) {
                     localStorage.setItem('currentUser', sessionPayload);
                 } else {
                     sessionStorage.setItem('currentUser', sessionPayload);
                 }
 
-                // Routing
                 window.location.href = userData.role === "admin" ? "admin.html" : "dashboard.html";
 
             } catch (e) { 
                 alert(e.message); 
-            } finally {
-                btn.textContent = "Login to Dashboard";
-                btn.disabled = false;
+            } finally { 
+                btn.textContent = "Login to Dashboard"; 
+                btn.disabled = false; 
             }
         });
     </script>

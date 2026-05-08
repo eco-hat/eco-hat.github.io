@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ECO-HAT | Student Registration</title>
+    <link rel="stylesheet" href="js/css/styles.css">
+    <style>
+        :root { 
+            --primary-red: #8B0000; 
+            --bg-gray: #f0f2f5; 
+            --card-shadow: 0 10px 25px rgba(0,0,0,0.1); 
+        }
+
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            margin: 0; 
+            background: var(--bg-gray); 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            min-height: 100vh;
+            /* Prevents the card from touching screen edges on mobile */
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .card { 
+            background: white; 
+            padding: 30px; 
+            border-radius: 24px; 
+            box-shadow: var(--card-shadow); 
+            width: 100%; 
+            /* Max width for desktop, 100% for mobile */
+            max-width: 450px; 
+            box-sizing: border-box;
+        }
+
+        .logo-container { text-align: center; margin-bottom: 20px; }
+        .logo-text { color: var(--primary-red); font-size: 1.8rem; font-weight: bold; margin: 0; }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .full-width { grid-column: span 2; }
+
+        input, select { 
+            width: 100%; 
+            padding: 14px; 
+            margin: 4px 0; 
+            border-radius: 10px; 
+            border: 1.5px solid #eee; 
+            box-sizing: border-box; 
+            font-size: 16px; /* 16px prevents iOS auto-zoom on focus */
+            outline: none;
+            background-color: #fafafa;
+            -webkit-appearance: none;
+            appearance: none; /* Removes default iOS styling */
+        }
+
+        input:focus, select:focus { 
+            border-color: var(--primary-red); 
+            background-color: #fff;
+        }
+
+        button { 
+            width: 100%; 
+            padding: 14px; 
+            border: none; 
+            border-radius: 12px; 
+            cursor: pointer; 
+            font-weight: 600; 
+            font-size: 16px; 
+            margin-top: 15px;
+            background: var(--primary-red); 
+            color: white;
+            transition: all 0.2s ease;
+            /* Ensure smooth clicking on mobile */
+            touch-action: manipulation; 
+        }
+
+        button:active { transform: scale(0.98); opacity: 0.9; }
+
+        .validation-msg { color: #d32f2f; font-size: 0.75rem; margin-top: 2px; display: none; }
+
+        /* Success Popup Styles */
+        #success-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6);
+            justify-content: center; 
+            align-items: center;
+            z-index: 1000;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .modal-content {
+            background: white; 
+            padding: 30px; 
+            border-radius: 20px; 
+            text-align: center;
+            width: 100%;
+            max-width: 320px; 
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        /* Responsive Breakpoints */
+        @media (max-width: 480px) {
+            .card {
+                padding: 20px;
+                border-radius: 20px;
+            }
+            .form-grid {
+                /* Stacks inputs vertically on small phones */
+                grid-template-columns: 1fr; 
+            }
+            .full-width {
+                grid-column: span 1;
+            }
+            .logo-text {
+                font-size: 1.5rem;
+            }
+        }
+
+        /* Adjustments for taller modern phones */
+        @media (max-height: 700px) {
+            body {
+                align-items: flex-start; /* Allows scrolling if screen is too short */
+                padding: 40px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <div class="logo-container">
+            <h2 class="logo-text">♻ ECO-HAT</h2>
+            <p style="color: #666; font-size: 0.9rem; margin-top: 5px;">Student Registration</p>
+        </div>
+
+        <form id="reg-form">
+            <div class="form-grid">
+                <div class="full-width">
+                    <input type="text" id="reg-name" placeholder="Full Name" required>
+                </div>
+                <div class="full-width">
+                    <input type="text" id="reg-id" placeholder="Student ID (XXXX-XXXXX-BN-X)" required>
+                </div>
+                
+                <div>
+                    <select id="reg-course" required>
+                        <option value="" disabled selected>Course</option>
+                        <option value="BSCPE">BSCPE</option>
+                        <option value="DCPET">DCPET</option>
+                        <option value="BSIT">BSIT</option>
+                        <option value="BSIE">BSIE</option>
+                        <option value="BSBA">BSBA</option>
+                        <option value="BSPSYCH">BSPSYCH</option>
+                        <option value="BSED-ENG">BSED-ENG</option>
+                        <option value="BSED-SS">BSED-SS</option>
+                        <option value="BSED">BSED</option>
+                    </select>
+                </div>
+
+                <div>
+                    <select id="reg-year" required>
+                        <option value="" disabled selected>Year Level</option>
+                        <option value="1">1st Year</option>
+                        <option value="2">2nd Year</option>
+                        <option value="3">3rd Year</option>
+                        <option value="4">4th Year</option>
+                    </select>
+                </div>
+
+                <div class="full-width">
+                    <input type="password" id="reg-pass" placeholder="Password" required>
+                </div>
+                <div class="full-width">
+                    <input type="password" id="reg-confirm" placeholder="Confirm Password" required>
+                    <small id="pass-error" class="validation-msg">Passwords do not match!</small>
+                </div>
+            </div>
+
+            <button type="submit" id="submit-btn">Create Account</button>
+        </form>
+
+        <p style="text-align: center; font-size: 0.85rem; margin-top: 20px;">
+            Already have an account? <a href="index.html" style="color: var(--primary-red); font-weight: 600; text-decoration: none;">Login here</a>
+        </p>
+    </div>
+
+    <div id="success-modal">
+        <div class="modal-content">
+            <div style="font-size: 3.5rem; color: #2e7d32; margin-bottom: 10px;">✔</div>
+            <h3 style="margin: 10px 0;">Registration Successful!</h3>
+            <p style="color: #666; font-size: 0.9rem; margin-bottom: 20px;">You can now log in to your sustainability dashboard.</p>
+            <button onclick="window.location.href='index.html'" style="background: #333; margin-top: 0;">Go to Login</button>
+        </div>
+    </div>
+
+    <script type="module">
+        import User from './js/models/User.js';
+        import Storage from './js/services/Storage.js';
+
+        const form = document.getElementById('reg-form');
+        const passError = document.getElementById('pass-error');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const name = document.getElementById("reg-name").value.trim();
+            const id = document.getElementById("reg-id").value.trim();
+            const course = document.getElementById("reg-course").value;
+            const year = document.getElementById("reg-year").value;
+            const pass = document.getElementById("reg-pass").value;
+            const confirmPass = document.getElementById("reg-confirm").value;
+
+            // Password matching validation
+            if (pass !== confirmPass) {
+                passError.style.display = 'block';
+                return;
+            } else {
+                passError.style.display = 'none';
+            }
+
+            const btn = document.getElementById('submit-btn');
+            try {
+                btn.textContent = "Processing...";
+                btn.disabled = true;
+
+                // Create user object with course and year
+                const newUser = new User(name, id, pass);
+                newUser.course = course;
+                newUser.year = year;
+
+                await Storage.register(newUser); 
+                
+                // Show Success Popup
+                document.getElementById('success-modal').style.display = 'flex';
+
+            } catch (err) {
+                alert(err.message || "An error occurred during registration.");
+                btn.textContent = "Create Account";
+                btn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>

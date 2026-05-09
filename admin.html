@@ -293,13 +293,13 @@
     // --- LEADERBOARD LOGIC ---
     async function loadLeaderboard() {
         try {
-            // Ensure this uses capital 'Storage'
             const data = await Storage.getAllStudents(); 
             if (!data || data.length === 0) {
                 renderEmptyState();
                 return;
             }
-            renderLeaderboard(data);
+            studentsData = data; 
+            renderLeaderboard();
         } catch (e) {
             console.error("Leaderboard load failed", e);
             renderEmptyState();

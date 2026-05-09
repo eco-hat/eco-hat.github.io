@@ -154,7 +154,7 @@
                 
                 <div>
                     <select id="reg-course" required>
-                        <option value="" disabled selected>Program</option>
+                        <option value="" disabled selected>Course</option>
                         <option value="BSCPE">BSCPE</option>
                         <option value="DCPET">DCPET</option>
                         <option value="BSIT">BSIT</option>
@@ -212,7 +212,7 @@
 
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
-            
+ 
             const name = document.getElementById("reg-name").value.trim();
             const id = document.getElementById("reg-id").value.trim();
             const course = document.getElementById("reg-course").value;
@@ -222,33 +222,39 @@
 
             // Password matching validation
             if (pass !== confirmPass) {
-                passError.style.display = 'block';
-                return;
-            } else {
-                passError.style.display = 'none';
-            }
+            passError.style.display = 'block';
+            return;
+        } else {
+            passError.style.display = 'none';
+        }
 
-            const btn = document.getElementById('submit-btn');
-            try {
-                btn.textContent = "Processing...";
-                btn.disabled = true;
+        const btn = document.getElementById('submit-btn');
+        try {
+            btn.textContent = "Processing...";
+            btn.disabled = true;
 
-                // Create user object with course and year
-                const newUser = new User(name, id, pass);
-                newUser.course = course;
-                newUser.year = year;
+            // 1. Create the base user object
+            const newUser = new User(name, id, pass, course, year);
+ 
+            // 2. Explicitly attach the extra properties
+            // We use 'studentNumber' because your Dashboard logic looks for that property
+            newUser.studentNumber = id; 
+            newUser.course = course;
+            newUser.year = year;
+            newUser.role = 'student';
+            newUser.points = 0;
 
-                await Storage.register(newUser); 
-                
-                // Show Success Popup
-                document.getElementById('success-modal').style.display = 'flex';
+            // 3. Save to Storage
+            await Storage.register(newUser); 
+            // Show Success Popup
+            document.getElementById('success-modal').style.display = 'flex';
 
-            } catch (err) {
-                alert(err.message || "An error occurred during registration.");
-                btn.textContent = "Create Account";
-                btn.disabled = false;
-            }
-        });
-    </script>
+        } catch (err) {
+            alert(err.message || "An error occurred during registration.");
+            btn.textContent = "Create Account";
+            btn.disabled = false;
+        }
+    });
+ </script>
 </body>
 </html>

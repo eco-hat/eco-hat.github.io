@@ -12,7 +12,7 @@
             --bg: #f4f7f6; 
         }
         
-        body { display: flex; background: var(--bg); font-family: 'Segoe UI', sans-serif; margin: 0; min-height: 100vh; }
+        body { display: flex; background: var(--bg); font-family: 'Segoe UI', sans-serif; margin: 0; min-height: 100vh; overflow-x: hidden; }
 
             /* Leaderboard Colors */
             .rank-1 { color: #FFD700; font-weight: bold; } /* Gold */
@@ -70,14 +70,36 @@
             border-left: 4px solid var(--gold);
         }
 
-
         /* --- MAIN CONTENT AREA --- */
         .main-content {
             margin-left: 260px;
             flex: 1;
             padding: 40px;
             width: calc(100% - 260px);
+            box-sizing: border-box;
         }
+
+        /* --- MOBILE TABLE OPTIMIZATION --- */
+    @media (max-width: 600px) {
+        /* Hide non-essential columns on small screens */
+        #leaderboard-body td:nth-child(3), 
+        thead th:nth-child(3) {
+            display: none;
+        }
+
+        table {
+            font-size: 0.8rem !important;
+        }
+
+        #leaderboard-body td {
+            padding: 8px 4px !important;
+        }
+
+        .main-content {
+            padding: 15px;
+            padding-top: 80px;
+        }
+    }
 
         .points-card { 
             background: white; padding: 40px; border-radius: 20px; 
@@ -100,6 +122,8 @@
             padding: 25px;
             border-radius: 15px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
         }
 
         /* Profile Specific UI */
@@ -210,7 +234,6 @@
         const localUser = Storage.getCurrentUser();
         if(!localUser || localUser.role === 'admin') window.location.href = "index.html";
 
-        // Global Navigation Logic
         window.switchView = (viewName) => {
             document.querySelectorAll('.view').forEach(v => v.style.display = 'none');
             document.getElementById(`${viewName}-view`).style.display = 'block';
@@ -235,7 +258,7 @@
             const lbBody = document.getElementById('leaderboard-body');
             try {
                 const allStudents = await Storage.getAllStudents();
-                const topTen = allStudents.sort((a, b) => b.points - a.points).slice(0, 10);
+                const topTen = allStudents.sort((a, b) => (b.points || 0) - (a.points || 0)).slice(0, 10);
 
                 lbBody.innerHTML = topTen.map((student, index) => {
                     const rank = index + 1;
@@ -246,17 +269,19 @@
                     else if (rank === 2) { rankDisplay = '🥈'; rankClass = 'rank-2'; }
                     else if (rank === 3) { rankDisplay = '🥉'; rankClass = 'rank-3'; }
 
-                    const isMe = student.student_id === localUser.id ? 'current-user-row' : '';
+                    const isMe = (student.student_id === (localUser.student_id || localUser.studentNumber)) ? 'current-user-row' : '';
 
                     return `
                         <tr class="${isMe}">
-                            <td class="${rankClass}" style="text-align:center; width:50px;">${rankDisplay}</td>
+                            <td class="${rankClass}" style="text-align:center;">${rankDisplay}</td>
                             <td>
-                                <div style="font-weight:600;">${student.name}</div>
-                                <small style="color:#666; font-size:0.75rem;">${student.student_id}</small>
+                                <div style="font-weight:600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px;">
+                                    ${student.name}
+                                </div>
+                                <small style="color:#888; font-size:0.7rem;">${student.student_id || '---'}</small>
                             </td>
-                            <td style="text-align:center;">${Math.floor(student.points / 5)}</td>
-                            <td style="text-align:right; font-weight:bold; color:var(--maroon);">${student.points}</td>
+                            <td style="text-align:center;">${Math.floor((student.points || 0) / 5)}</td>
+                            <td style="text-align:right; font-weight:bold; color:var(--maroon);">${student.points || 0}</td>
                         </tr>
                     `;
                 }).join('');
@@ -267,37 +292,37 @@
 
         async function loadDashboard() {
             try {
-                const dbData = await Storage.getUserHistory(localUser.studentNumber);
-                const points = dbData.points;
-
-                // Update Basic UI
-                document.getElementById('user-points').textContent = points;
-                document.getElementById('prof-display-name').textContent = localUser.name;
-                document.getElementById('prof-id').textContent = localUser.studentNumber;
-                document.getElementById('prof-lifetime').textContent = points;
-
-                // Update History
-                const list = document.getElementById('history-list');
-                list.innerHTML = dbData.activities.length === 0 ? 
-                    "<p style='text-align:center; color:#888;'>No activity yet.</p>" : "";
-
-                dbData.activities.forEach(a => {
-                    const isPos = a.points > 0;
-                    list.innerHTML += `
-                        <div class="history-item" style="border-left: 5px solid ${isPos ? '#2ecc71' : '#e74c3c'}; padding: 10px; margin-bottom: 10px; background: #f9f9f9; display: flex; justify-content: space-between; align-items: center;">
-                            <div>
-                                <b>${a.description}</b><br>
-                                <small style="color:#aaa">${new Date(a.date).toLocaleString()}</small>
-                            </div>
-                            <div style="font-weight:bold; color:${isPos ? '#27ae60' : '#c0392b'}">
-                                ${isPos ? '+' : ''}${a.points}
-                            </div>
-                        </div>`;
-                });
+                const studentId = localUser.student_id || localUser.studentNumber;
+                const dbData = await Storage.getUserHistory(studentId);
                 
-                loadLeaderboard();
+                console.log("Current User Data:", localUser);
+
+                // 1. Update Profile Info
+                document.getElementById('prof-display-name').textContent = localUser.name || "Student";
+                document.getElementById('prof-id').textContent = studentId || "---";
+                document.getElementById('prof-course').textContent = localUser.course || "---";
+
+                // 2. Updated Year Level Logic (Using 'yearLevel' from your console log)
+                const rawYear = localUser.yearLevel || localUser.year || dbData.yearLevel || dbData.year;
+                
+                if (rawYear) {
+                    const yearNum = String(rawYear).charAt(0);
+                    const suffixes = { "1": "st", "2": "nd", "3": "rd", "4": "th" };
+                    const suffix = suffixes[yearNum] || "th";
+                    
+                    document.getElementById('prof-year').textContent = `${yearNum}${suffix} Year`;
+                } else {
+                    document.getElementById('prof-year').textContent = "---";
+                }
+
+                // 3. Stats & Balance
+                const currentPoints = dbData.points || 0;
+                document.getElementById('prof-lifetime').textContent = currentPoints;
+                document.getElementById('user-points').textContent = currentPoints;
+
+                // ... rest of your history list and loadLeaderboard()
             } catch (error) {
-                console.error(error);
+                console.error("Dashboard error:", error);
             }
         }
 

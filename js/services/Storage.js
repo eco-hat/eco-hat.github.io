@@ -166,4 +166,22 @@ export default class Storage {
         if (!response.ok) throw new Error("Failed to save transaction log");
         return await response.json();
     }
+
+    static async getAllStudents() {
+    try {
+        const response = await fetch(`${this.API_URL}/admin/students`);
+        if (!response.ok) throw new Error("Failed to fetch student list");
+        
+        const students = await response.json();
+        
+        // Add a calculated 'bottles_collected' field for the UI
+        return students.map(s => ({
+            ...s,
+            bottles_collected: Math.floor((s.points || 0) / 5)
+        }));
+    } catch (err) {
+        console.error("Leaderboard fetch error:", err);
+        return []; 
+    }
+}
 }
